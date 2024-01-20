@@ -1,0 +1,59 @@
+@import "variables/colors";
+
+@import "components/header";
+@import "components/cards";
+@import "components/lines";
+
+.nav-link:hover,
+.nav-link.active {
+  background: @primary;
+  color: @light !important;
+}
+
+.apk-menu-option {
+  color: @light;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  background-color: @primary !important;
+  border: 1px solid darken(@primary, 10%) !important;
+  border-radius: var(--bs-border-radius);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  & > img {
+    filter: invert(1);
+    opacity: 1;
+  }
+
+  &:hover > img,
+  &:hover > span {
+    opacity: 0.6;
+  }
+}
+
+.line-and-text {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+
+  position: relative;
+  border-top: 1px solid @primary;
+
+  & > div {
+    position: absolute;
+    background: @dark;
+    z-index: 999;
+    left: 50%;
+    top: 0;
+
+    width: 40px;
+    height: 20px;
+    margin-top: -10px;
+    margin-left: -20px;
+
+    font-size: 20px;
+    line-height: 1rem;
+    text-align: center;
+  }
+}

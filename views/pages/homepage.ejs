@@ -1,0 +1,24 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-6 offset-md-3">
+      <div class="list-group fw-bold fs-4">
+        <% menuOptions.forEach((menu) => { %>
+        <a
+          href="<%- sails.getUrlFor('PageController.collection').replace(':collection', menu.collection) %>"
+          class="list-group-item list-group-item-danger list-group-item-action bg-danger bg-gradient apk-menu-option"
+        >
+          <% /*<img width="48" src="<- menu.image >" alt="" />*/ %>
+          <span><%- menu.name %></span>
+        </a>
+        <% }); %>
+        <a
+          href="mailto:admin@aneela.pk?subject=Contact From Aneelas Website"
+          class="list-group-item list-group-item-danger list-group-item-action bg-danger bg-gradient apk-menu-option"
+        >
+          <% /*<img width="48" src="/images/contact.png" alt="" />*/ %>
+          <span>Contact</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,41 @@
+{
+  "name": "aneelas-office",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Aneelas Collection office v1 application",
+  "keywords": [],
+  "dependencies": {
+    "axios": "^1.6.0",
+    "git-rev-sync": "^3.0.2",
+    "grunt": "1.6.1",
+    "grunt-rename": "^0.1.4",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "node-input-validator": "^4.5.1",
+    "prettier-plugin-ejs": "^0.0.18",
+    "sails": "^1.5.8",
+    "sails-hook-apianalytics": "^2.0.5",
+    "sails-hook-grunt": "^5.0.0",
+    "sails-hook-orm": "^4.0.0",
+    "sails-mysql": "^3.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "prettier": "3.0.3"
+  },
+  "scripts": {
+    "dev": "nodemon --watch api --watch config app.js",
+    "prod": "NODE_ENV=production node app.js",
+    "prettier": "prettier --plugin=prettier-plugin-ejs --write ./"
+  },
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/oknasir/office.git"
+  },
+  "author": "oknasir",
+  "license": "",
+  "engines": {
+    "node": "^18.16"
+  }
+}

@@ -1,0 +1,57 @@
+.btn-done {
+  height: 60px;
+  line-height: 2em;
+  border-color: @primary;
+  background-color: @primary;
+  border-radius: 20px 0 20px 0;
+
+  &:hover {
+    border-color: darken(@primary, 10%);
+    background-color: darken(@primary, 10%);
+  }
+}
+
+.card-actions {
+  position: absolute;
+  z-index: 999;
+  bottom: 0;
+  right: 0;
+
+  width: 70%;
+  background-repeat: repeat-y;
+  background-position-x: left;
+  background-image: url("/images/dark-gradiant.png");
+}
+
+.product-listing .card-img {
+  min-height: 498px;
+}
+
+.card-play-video {
+  position: absolute;
+  cursor: pointer;
+  z-index: 999;
+  left: 50%;
+  top: 50%;
+
+  margin-left: -40px;
+  margin-top: -40px;
+
+  & i {
+    text-align: center;
+    font-size: 50px;
+    height: 80px;
+    width: 80px;
+
+    display: flex;
+    align-items: center;
+
+    color: @primary;
+    border-radius: 50%;
+    border: 5px solid @primary;
+
+    &:before {
+      margin-left: 20px;
+    }
+  }
+}

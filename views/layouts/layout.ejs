@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <% if (typeof title !== "undefined") { %>
+    <title><%- title; %> Aneelas Office</title>
+    <% } else { %>
+    <title>Not Found | Aneelas Office</title>
+    <% } %>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+    <!--STYLES-->
+    <link rel="stylesheet" href="/dependencies/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="/dependencies/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/styles/importer.css">
+    <!--STYLES END-->
+  </head>
+
+  <body class="bg-black text-light">
+    <div class="lines">
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+    </div>
+
+    <div class="container text-center">
+      <a href="/"><img class="logo my-4" src="/images/aneelas_logo_white.svg" alt="Aneelas Logo" /></a>
+    </div>
+
+    <%- body; %>
+
+    <!--TEMPLATES-->
+    <!--TEMPLATES END-->
+
+    <!--SCRIPTS-->
+    <script src="/dependencies/bootstrap/bootstrap.min.js"></script>
+    <!--SCRIPTS END-->
+  </body>
+</html>

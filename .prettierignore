@@ -1,0 +1,6 @@
+assets/dependencies
+node_modules
+Gruntfile.js
+app.js
+tasks
+.tmp

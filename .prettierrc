@@ -1,0 +1,13 @@
+{
+  "plugins": ["prettier-plugin-ejs"],
+  "semi": true,
+  "printWidth": 150,
+  "overrides": [
+    {
+      "files": ".ts",
+      "options": {
+        "semi": false
+      }
+    }
+  ]
+}
