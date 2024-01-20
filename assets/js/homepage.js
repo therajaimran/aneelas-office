@@ -38,8 +38,8 @@ jQuery(document).ready(function ($) {
             }
           })
           .always(function () {
-            $t.focus();
-            // $t.val('').focus();
+            // $t.focus();
+            $t.val("").focus();
             $loader.hide();
           });
       }
