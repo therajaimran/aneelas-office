@@ -16,7 +16,7 @@ jQuery(document).ready(function ($) {
         $productContainer.empty();
         $amount.hide().find("b").text("");
 
-        $.post("/orders/find-products", { search }, null, "json")
+        $.post("/orders/orders/find-products", { search }, null, "json")
           .then(function (res) {
             let totalItems = 0;
             res.products.forEach(function (product) {
@@ -47,19 +47,16 @@ jQuery(document).ready(function ($) {
   });
 
   const populateProduct = function (product) {
+    const thumbSplit = product.thumbnail_.split("/");
+    const image = thumbSplit[thumbSplit.length - 1];
     $productContainer.append(`
       <div class="col-md-4 col-lg-3 col-xl-3 col-xxl-2">
         <div class="card mb-4 text-bg-dark">
-          <img src="${product.thumbnail_.replace(
-            "https://thumbs.aneelas.pk",
-            "http://192.168.10.220/thumbs",
-          )}" width="280" height="495" class="card-img" alt="${product.id}" />
+          <img src="http://192.168.10.220/orders/thumbs/${image}" width="280" height="495" class="card-img" alt="${product.id}" />
           <div class="card-img-overlay p-0">
             <h6 class="card-title p-1 bg-dark bg-opacity-75">${product.name}</h6>
 
-            <div class="product-quantity play-video" data-toggle="tooltip" data-placement="top" title="Product Quantity" data-video="${
-              product.video_
-            }">
+            <div class="product-quantity play-video" data-toggle="tooltip" data-placement="top" title="Product Quantity" data-video="${product.video_}">
               ${product.qty}
             </div>
 
