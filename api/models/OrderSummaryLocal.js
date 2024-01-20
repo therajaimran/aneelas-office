@@ -210,10 +210,16 @@ module.exports = {
       columnName: "order_place_date",
     },
 
-    packedAt: {
+    printedAt: {
       type: "ref",
       columnType: "datetime",
       columnName: "packed_datetime",
+    },
+
+    packedAt: {
+      type: "ref",
+      columnType: "datetime",
+      columnName: "packed_at",
     },
 
     createdAt: {
