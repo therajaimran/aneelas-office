@@ -10,4 +10,7 @@
 
 module.exports.routes = {
   "GET /": { controller: "PageController", action: "homepage" },
+  "POST /orders/find-products": { controller: "PageController", action: "findProducts" },
+
+  "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },
 };
