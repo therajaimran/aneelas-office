@@ -52,7 +52,7 @@ jQuery(document).ready(function ($) {
     $productContainer.append(`
       <div class="col-md-4 col-lg-3 col-xl-3 col-xxl-2">
         <div class="card mb-4 text-bg-dark">
-          <img src="http://192.168.10.220/orders/thumbs/${image}" width="280" height="495" class="card-img" alt="${product.id}" />
+          <img src="http://192.168.10.220/thumbs/${image}" width="280" height="495" class="card-img" alt="${product.id}" />
           <div class="card-img-overlay p-0">
             <h6 class="card-title p-1 bg-dark bg-opacity-75">${product.name}</h6>
 
