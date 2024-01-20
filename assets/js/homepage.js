@@ -3,6 +3,10 @@ jQuery(document).ready(function ($) {
   const $loader = $(".page-loader-container").hide();
   const $productContainer = $("#order_products_list");
 
+  setInterval(function () {
+    $("#master_input").focus();
+  }, 1999);
+
   $("#master_input").keypress(function (e) {
     const keycode = e.keyCode ? e.keyCode : e.which;
 
