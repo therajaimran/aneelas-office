@@ -60,7 +60,7 @@ module.exports = {
     const { resolve } = require("node:path");
     const filename = thumb._files[0].stream.filename;
 
-    thumb.upload({ dirname: resolve("../product_thumbs"), maxBytes: 5.12e8, saveAs: filename }, async (err, files) => {
+    thumb.upload({ dirname: resolve("../html/thumbs"), maxBytes: 5.12e8, saveAs: filename }, async (err, files) => {
       if (err) {
         return res.status(400).json(err);
       }
