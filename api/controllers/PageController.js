@@ -25,7 +25,7 @@ module.exports = {
 
     let _order_summary = null;
     if (!order) {
-      _order_summary = await OrderSummaryLocal.findOne({ tempId: inputs.search });
+      _order_summary = await OrderSummaryLocal.findOne({ where: { or: [{ tempId: inputs.search }, { cnno: inputs.search }] } });
     } else {
       const summaries = await OrderSummaryLocal.find({
         where: { orderId: order.id },
