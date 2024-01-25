@@ -16,7 +16,7 @@ module.exports = {
     phone: { type: "string" },
     user_phone_secondary: { type: "string" },
     device_id: { type: "string" },
-    accountcode: { type: "string" },
+    accountcode: { type: "string", allowNull: true },
     order_object: { type: "ref" },
     date_insert: { type: "ref" },
     price_type: { type: "string" },
