@@ -1,11 +1,9 @@
 /**
- * @class Order
+ * @class OrderLocal
  * @mixes {Waterline~Model}
  */
 
 module.exports = {
-  datastore: "liveDB",
-
   tableName: "new_orders",
 
   attributes: {
@@ -99,83 +97,5 @@ module.exports = {
     pre_cnno_price: { type: "string", allowNull: true },
     rider_last_status: { type: "string", allowNull: true },
     shopify_order: { type: "string", allowNull: true },
-  },
-
-  searchSummary: async (tempId) => {
-    const _summary = await OrderSummary.findOne({
-      select: ["id", "orderId", "cnno", "codAmount", "dispatchRider", "dispatchDelivery", "returnedAt"],
-      where: { tempId },
-    });
-
-    let _return = null;
-    if (_summary && _summary.orderId) {
-      const rawResult = await Order.getDatastore().sendNativeQuery("SELECT * FROM new_orders WHERE id=$1;", [_summary.orderId]);
-      if (rawResult.rows.length) {
-        _return = { order: { ...rawResult.rows[0] }, summary: _summary };
-      }
-    }
-
-    return _return;
-  },
-
-  search: async (search, one = false) => {
-    const rawSQL = `SELECT * FROM new_orders WHERE (id=$1 OR LOWER(temp_id)=$1 OR call_courier_cnno=$1 OR trax_tracking_number=$1 OR rider_logistics_cnum=$1) ORDER BY id DESC ${
-      one ? "LIMIT 1" : ""
-    };`;
-    const rawResult = await Order.getDatastore().sendNativeQuery(rawSQL, [search.toLowerCase()]);
-
-    let _return = null;
-    if (rawResult.rows.length) {
-      if (one) {
-        _return = { ...rawResult.rows[0] };
-      } else {
-        _return = [...rawResult.rows];
-      }
-    }
-
-    return _return;
-  },
-
-  searchIn: async (filed, value, select = "*") => {
-    const rawSQL = `SELECT ${select} FROM new_orders WHERE ${filed} IN (${value.join(",")}) ORDER BY id DESC;`;
-    const rawResult = await Order.getDatastore().sendNativeQuery(rawSQL);
-
-    let _return = null;
-    if (rawResult.rows.length) {
-      _return = [...rawResult.rows];
-    }
-
-    return _return;
-  },
-
-  history: async (phone) => {
-    const statuses = "('merged', 'duplicate')";
-    const rawSQL = `SELECT ord.id, ord.status, ord.country, ord.city, ord.address, ord.phone, ord.user_phone_secondary, ord.order_object, ord.call_courier_last_status, ord.rider_last_status, ord.total_amount, ord.date_insert, ord.order_type, ord.opened_by, ord.trax_last_status, ord.trax_status_reason, ord.phone, ord.accountcode, stripe.payment_url, stripe.status as stripe_status, stripe.confirmation_code, stripe.dollar_rate, stripe.payment_link_created FROM (new_orders as ord) LEFT JOIN stripe_logs as stripe ON ord.id = stripe.order_id WHERE ord.status NOT IN ${statuses} AND ord.phone = '${phone}' ORDER BY ord.id DESC;`;
-
-    const rawResult = await Order.getDatastore().sendNativeQuery(rawSQL);
-
-    let _return = [];
-    if (rawResult.rows.length) {
-      rawResult.rows.forEach((order) => {
-        if (order && order.order_object) {
-          order.order_object = JSON.parse(order.order_object);
-        }
-
-        _return.push({ ...order });
-      });
-    }
-
-    return _return;
-  },
-
-  cityMapping: async () => {
-    const rawResult = await Order.getDatastore().sendNativeQuery("SELECT * FROM city_mapping;");
-
-    let _return = [];
-    if (rawResult.rows.length) {
-      _return = [...rawResult.rows];
-    }
-
-    return _return;
   },
 };

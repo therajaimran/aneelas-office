@@ -54,15 +54,6 @@ module.exports.globals = {
 /**
  * Global Prototypes
  */
-String.prototype.isJson = function () {
-  try {
-    JSON.parse(this);
-  } catch (e) {
-    return false;
-  }
-  return true;
-};
-
 Array.prototype.sortByKey = function (key = "id", asc = true) {
   this.sort(function (a, b) {
     if (+a[key] === +b[key]) {
@@ -75,6 +66,19 @@ Array.prototype.sortByKey = function (key = "id", asc = true) {
       }
     }
   });
+};
+
+Array.prototype.unique = function () {
+  return this.filter((item, i, ar) => ar.indexOf(item) === i);
+};
+
+String.prototype.isJson = function () {
+  try {
+    JSON.parse(this);
+  } catch (e) {
+    return false;
+  }
+  return true;
 };
 
 String.prototype.trimSymbol = function (char = " ") {

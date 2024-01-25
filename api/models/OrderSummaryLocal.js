@@ -4,8 +4,6 @@
  */
 
 module.exports = {
-  datastore: "office",
-
   tableName: "order_summary",
 
   attributes: {

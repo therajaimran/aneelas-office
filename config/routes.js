@@ -15,4 +15,6 @@ module.exports.routes = {
 
   "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },
   "POST /order-summary-local": { controller: "PageController", action: "localSummary" },
+
+  "POST /order-local": { controller: "PageController", action: "localOrder" },
 };

@@ -95,6 +95,32 @@ module.exports = {
     return res.json({ message: "Summary saved successfully." });
   },
 
+  localOrder: async (req, res) => {
+    const inputs = req.allParams();
+
+    const VS = Validator(inputs, {
+      id: "required|integer",
+    });
+
+    const matched = await VS.check();
+
+    if (!matched) {
+      return res.status(400).json(VS.errors);
+    }
+
+    const _order = await Order.findOne({ id: inputs.id });
+    const _local = await OrderLocal.findOne({ id: inputs.id });
+
+    if (_local) {
+      delete _order.id;
+      await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
+    } else {
+      await OrderLocal.create({ ..._order });
+    }
+
+    return res.json({ message: "Order saved successfully and pre-cnno generated." });
+  },
+
   uploadThumbs: async (req, res) => {
     const thumb = req.file("thumb");
 

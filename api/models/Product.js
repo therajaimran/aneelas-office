@@ -4,6 +4,8 @@
  */
 
 module.exports = {
+  datastore: "liveDB",
+
   tableName: "products_inventory",
 
   attributes: {

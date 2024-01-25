@@ -17,12 +17,12 @@ module.exports.datastores = {
   default: {
     timezone: "Z",
     adapter: "sails-mysql",
-    url: "mysql://aws_sails_oknasir:ryrreR8]butgicytzex@18.141.200.76:3306/annaya",
+    url: "mysql://ofc_admin:beddaz-wiNwar-netmu4@192.168.10.220:3306/annaya",
   },
 
-  office: {
+  liveDB: {
     timezone: "Z",
     adapter: "sails-mysql",
-    url: "mysql://ofc_admin:beddaz-wiNwar-netmu4@192.168.10.220:3306/annaya",
+    url: "mysql://aws_sails_oknasir:ryrreR8]butgicytzex@18.141.200.76:3306/annaya",
   },
 };
