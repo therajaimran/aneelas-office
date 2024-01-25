@@ -111,12 +111,30 @@ module.exports = {
     const _order = await Order.findOne({ id: inputs.id });
     const _local = await OrderLocal.findOne({ id: inputs.id });
 
-    if (_local) {
-      delete _order.id;
-      await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
-    } else {
-      await OrderLocal.create({ ..._order });
+    if (!_order.city) {
+      return res.status(400).json({ message: "Order city is not available." });
     }
+
+    let total = 0;
+    const products = JSON.parse(_order.order_object);
+    products.forEach((item) => {
+      total += item.itemPrice;
+    });
+
+    if (_order.city.toLowerCase() === "lahore") {
+      total += 200;
+    } else {
+      total += 250;
+    }
+
+    console.log(total);
+
+    // if (_local) {
+    //   delete _order.id;
+    //   await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
+    // } else {
+    //   await OrderLocal.create({ ..._order });
+    // }
 
     return res.json({ message: "Order saved successfully and pre-cnno generated." });
   },
