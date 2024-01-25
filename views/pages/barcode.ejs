@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <% if (typeof title !== "undefined") { %>
+    <title><%- title; %> | Aneelas Office</title>
+    <% } else { %>
+    <title>Not Found | Aneelas Office</title>
+    <% } %>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+    <style>
+      table {
+        page-break-inside: auto;
+      }
+
+      tr {
+        page-break-inside: avoid;
+      }
+
+      thead {
+        display: table-header-group;
+      }
+
+      tfoot {
+        display: table-footer-group;
+      }
+
+      td.container {
+        height: 100px;
+      }
+
+      #item_id {
+        font-weight: 600;
+        font-size: 190px;
+        line-height: 0.7;
+      }
+
+      .container > center > svg {
+        transform: scale(1.2, 1) !important;
+      }
+    </style>
+
+    <script src="/orders/dependencies/jquery-3.7.1.min.js"></script>
+    <script src="/orders/dependencies/JsBarcode.all.js"></script>
+    <script src="/orders/js/homepage.js"></script>
+    <script src="/orders/js/barcode.js"></script>
+  </head>
+
+  <body>
+    <center>
+      <table border="0" width="100%">
+        <input type="hidden" id="itemID" value="<%- productId %>" />
+        <input type="hidden" id="total" value="<%- total %>" />
+        <input type="hidden" id="itemName" value="<%- name %>" />
+
+        <script type="text/javascript">
+          // BELOW CODE IS EXISIING WORKING FUNCTIONALITY WITH GET URL PARAMETERS
+          //BELOW CODE ONLY WORK WITH 2 GET $_REQUEST PARAMS itemId and total
+
+          let totalVal = parseInt($("#total").val());
+          let itemId = $("#itemID").val();
+          let name = $("#itemName").val();
+          let total = totalVal ? totalVal : 1;
+
+          for (var a = 0; a < total; a++) {
+            var id = "barcode" + (a + 1);
+
+            var rString = randomString(4);
+            let newItemId = itemId + "_" + rString;
+            if (name) {
+              newItemId = "vendor_" + itemId;
+            }
+            document.write("<tr>");
+            document.write("<td  class='container'><center><svg style='transform:scale(1.2,1);' id=" + id + ">");
+            JsBarcode("#" + id, newItemId, {
+              format: "CODE128",
+              displayValue: true,
+              fontSize: 0,
+            });
+            document.write("</svg>");
+            if (name) {
+              document.write(
+                "<div id='item_id' style='font-size:50px;line-height:1'>" + name.slice(0, 20).toString().toCapitalizeAllWords() + "</div>",
+              );
+            } else {
+              document.write("<div id='item_id'>" + itemId + "</div>");
+              document.write("<div style='font-weight:600;font-size:36px;'>" + datetime + "</div>");
+            }
+            document.write("</td></tr><p></p>");
+          }
+
+          function randomString(length) {
+            let chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var result = "";
+            for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+            return result;
+          }
+        </script>
+      </table>
+    </center>
+  </body>
+</html>
