@@ -21,7 +21,23 @@ module.exports = {
       return res.status(400).json(VS.errors);
     }
 
-    const _order_summary = await OrderSummaryLocal.findOne({ tempId: inputs.search });
+    const order = await OrderLocal.search(inputs.search, true);
+
+    let _order_summary = null;
+    if (!order) {
+      _order_summary = await OrderSummaryLocal.findOne({ tempId: inputs.search });
+    } else {
+      const summaries = await OrderSummaryLocal.find({
+        select: ["id", "orderId", "cnno", "codAmount", "dispatchRider", "dispatchDelivery", "returnedAt"],
+        where: { orderId: order.id },
+        sort: "id DESC",
+      });
+
+      _order_summary = summaries.find((item) => !!item.dispatchRider);
+      if (summaries.length && !_order_summary) {
+        _order_summary = summaries[0];
+      }
+    }
 
     if (!_order_summary) {
       return res.status(400).json({

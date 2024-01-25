@@ -98,4 +98,22 @@ module.exports = {
     rider_last_status: { type: "string", allowNull: true },
     shopify_order: { type: "string", allowNull: true },
   },
+
+  search: async (search, one = false) => {
+    const rawSQL = `SELECT * FROM new_orders WHERE (id=$1 OR LOWER(temp_id)=$1 OR call_courier_cnno=$1 OR trax_tracking_number=$1 OR rider_logistics_cnum=$1) ORDER BY id DESC ${
+      one ? "LIMIT 1" : ""
+    };`;
+    const rawResult = await OrderLocal.getDatastore().sendNativeQuery(rawSQL, [search.toLowerCase()]);
+
+    let _return = null;
+    if (rawResult.rows.length) {
+      if (one) {
+        _return = { ...rawResult.rows[0] };
+      } else {
+        _return = [...rawResult.rows];
+      }
+    }
+
+    return _return;
+  },
 };
