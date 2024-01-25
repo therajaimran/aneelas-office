@@ -62,7 +62,7 @@ jQuery(document).ready(function ($) {
         <div class="card mb-4 text-bg-dark">
           <img src="http://192.168.10.220/thumbs/${image}" width="280" height="495" class="card-img" alt="${product.id}" />
           <div class="card-img-overlay p-0">
-            <h6 class="card-title p-1 bg-dark bg-opacity-75">${product.name}</h6>
+            <h6 class="card-title p-1 bg-dark bg-opacity-75">${product.id} | ${product.name}</h6>
 
             <div class="product-quantity play-video" data-toggle="tooltip" data-placement="top" title="Product Quantity" data-video="${product.video_}">
               ${product.qty}
