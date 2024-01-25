@@ -108,35 +108,116 @@ module.exports = {
       return res.status(400).json(VS.errors);
     }
 
-    const _order = await Order.findOne({ id: inputs.id });
-    const _local = await OrderLocal.findOne({ id: inputs.id });
+    try {
+      const _order = await Order.findOne({ id: inputs.id });
+      const _local = await OrderLocal.findOne({ id: inputs.id });
 
-    if (!_order.city) {
-      return res.status(400).json({ message: "Order city is not available." });
+      if (!_order.city) {
+        return res.status(400).json({ message: "Order city is not available." });
+      }
+
+      let total = 0;
+      let totalItems = 0;
+      let description = "";
+      const products = JSON.parse(_order.order_object);
+      products.forEach((item) => {
+        total += +item.itemPrice;
+
+        if (item.id < 1000000) {
+          totalItems++;
+          description += item.name.replace(/\s/g, "_");
+        }
+      });
+
+      if (_order.city.toLowerCase() === "lahore") {
+        total += 200;
+      } else {
+        total += 250;
+      }
+
+      const riderCities = await Order.cityMapping();
+
+      let isRider = false;
+      if (_order.city) {
+        riderCities.forEach((mapping) => {
+          if (_order.city.toLowerCase() === mapping.rider.toLowerCase()) {
+            isRider = true;
+          }
+        });
+      }
+
+      let consigneeNo = null;
+      if (isRider) {
+        const cities = await sails.helpers.adminRiderLogisticsCities();
+
+        let cityId = null;
+        cities.forEach((item) => {
+          if (_order.city.toLowerCase() === item.description.toLowerCase()) {
+            cityId = item.title;
+          }
+        });
+
+        const cnumRes = await sails.helpers.createRiderLogisticsConsigneeNo.with({
+          total,
+          cityId,
+          totalItems,
+          weight: "",
+          description: "",
+          orderId: _order.id,
+          phone: _order.phone,
+          address: _order.address,
+          username: _order.username,
+        });
+
+        console.log("cnumRes:", cnumRes);
+
+        consigneeNo = cnumRes.CNUM;
+      } else {
+        const cities = await sails.helpers.adminCallCourierCities();
+
+        let cityId = null;
+        Object.keys(cities).forEach((key) => {
+          if (_order.city.toUpperCase() === cities[key]) {
+            cityId = +key;
+          }
+        });
+
+        const cnnoRes = await sails.helpers.createCallCourierConsigneeNo.with({
+          total,
+          cityId,
+          description,
+          city: _order.city,
+          phone: _order.phone,
+          address: _order.address,
+          username: _order.username,
+        });
+
+        console.log("cnnoRes:", cnnoRes);
+
+        consigneeNo = cnnoRes.CNNO;
+      }
+
+      if (!consigneeNo) {
+        return res.status(400).json({ message: "Consignee no is not available." });
+      }
+
+      _order.pre_cnno = consigneeNo;
+      _order.pre_cnno_price = total.toString();
+
+      if (_local) {
+        delete _order.id;
+        await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
+      } else {
+        await OrderLocal.create({ ..._order });
+      }
+
+      await Order.updateOne({ id: _order.id }).set({ pre_cnno: consigneeNo, pre_cnno_price: total.toString() });
+
+      return res.json({ message: "Order saved successfully and pre-cnno generated." });
+    } catch (e) {
+      console.log(e);
+      return res.status(400).json({ message: "Execution error." });
     }
-
-    let total = 0;
-    const products = JSON.parse(_order.order_object);
-    products.forEach((item) => {
-      total += item.itemPrice;
-    });
-
-    if (_order.city.toLowerCase() === "lahore") {
-      total += 200;
-    } else {
-      total += 250;
-    }
-
-    console.log(total);
-
-    // if (_local) {
-    //   delete _order.id;
-    //   await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
-    // } else {
-    //   await OrderLocal.create({ ..._order });
-    // }
-
-    return res.json({ message: "Order saved successfully and pre-cnno generated." });
   },
 
   uploadThumbs: async (req, res) => {
