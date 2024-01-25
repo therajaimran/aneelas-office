@@ -85,7 +85,7 @@ module.exports = {
     trax_order_sent_json: { type: "string", allowNull: true },
     online_pay: { type: "number", allowNull: true },
     packed_by: { type: "string", allowNull: true },
-    admin_status: { type: "string" },
+    admin_status: { type: "string", allowNull: true },
     rider_logistics_order_sent_json: { type: "string", allowNull: true },
     rider_logistics_cnum: { type: "string", allowNull: true },
     rider_logistics_response: { type: "string", allowNull: true },
