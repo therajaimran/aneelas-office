@@ -28,7 +28,6 @@ module.exports = {
       _order_summary = await OrderSummaryLocal.findOne({ tempId: inputs.search });
     } else {
       const summaries = await OrderSummaryLocal.find({
-        select: ["id", "orderId", "cnno", "codAmount", "dispatchRider", "dispatchDelivery", "returnedAt"],
         where: { orderId: order.id },
         sort: "id DESC",
       });

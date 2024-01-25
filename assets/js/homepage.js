@@ -22,16 +22,20 @@ jQuery(document).ready(function ($) {
 
         $.post("/orders/orders/find-products", { search }, null, "json")
           .then(function (res) {
-            let totalItems = 0;
-            res.products.forEach(function (product) {
-              if (product.id < 1000000) {
-                totalItems += product.qty;
-                populateProduct(product);
-              }
-            });
-            setTimeout(function () {
-              $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems})`);
-            });
+            if (res.products) {
+              let totalItems = 0;
+              res.products.forEach(function (product) {
+                if (product.id < 1000000) {
+                  totalItems += product.qty;
+                  populateProduct(product);
+                }
+              });
+              setTimeout(function () {
+                $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems})`);
+              });
+            } else {
+              toastr.error("Sticker do not have sufficient values.", "Invalid");
+            }
           })
           .catch(function (res) {
             if (res && res.responseJSON) {
