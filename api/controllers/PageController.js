@@ -112,6 +112,10 @@ module.exports = {
       const _order = await Order.findOne({ id: inputs.id });
       const _local = await OrderLocal.findOne({ id: inputs.id });
 
+      if (!_order) {
+        return res.status(400).json({ message: "Order is not available." });
+      }
+
       if (!_order.city) {
         return res.status(400).json({ message: "Order city is not available." });
       }
@@ -211,7 +215,7 @@ module.exports = {
         await OrderLocal.create({ ..._order });
       }
 
-      await Order.updateOne({ id: _order.id }).set({ pre_cnno: consigneeNo, pre_cnno_price: total.toString() });
+      await Order.updateOne({ id: inputs.id }).set({ pre_cnno: consigneeNo, pre_cnno_price: total.toString() });
 
       return res.json({ message: "Order saved successfully and pre-cnno generated." });
     } catch (e) {
