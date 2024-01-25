@@ -7,7 +7,7 @@ module.exports = {
   tableName: "apk_customer_status",
 
   attributes: {
-    device_id: { type: "string" },
+    device_id: { type: "string", allowNull: true },
     customer_id: { type: "number", allowNull: true },
     phone: { type: "string" },
     last_order_id: { type: "number" },

@@ -74,6 +74,7 @@ module.exports = {
     await OrderSummaryLocal.create({
       id: inputs.summary.id,
       tempId: inputs.summary.temp_id,
+      orderTempId: inputs.summary.order_temp_id,
       warehouseAt: inputs.summary.warehouse_at,
       dispatchRider: inputs.summary.dispatch_rider,
       dispatchAt: inputs.summary.dispatch_at,
