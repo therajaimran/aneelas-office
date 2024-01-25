@@ -21,31 +21,27 @@ module.exports = {
       return res.status(400).json(VS.errors);
     }
 
-    const order = await OrderLocal.search(inputs.search, true);
-
-    let _order_summary = null;
-    if (!order) {
-      _order_summary = await OrderSummaryLocal.findOne({ where: { or: [{ tempId: inputs.search }, { cnno: inputs.search }] } });
-    } else {
-      const summaries = await OrderSummaryLocal.find({
-        where: { orderId: order.id },
-        sort: "id DESC",
-      });
-
-      _order_summary = summaries.find((item) => !!item.dispatchRider);
-      if (summaries.length && !_order_summary) {
-        _order_summary = summaries[0];
-      }
-    }
+    const _order_summary = await OrderSummaryLocal.find({
+      where: {
+        or: [
+          { orderTempId: inputs.search },
+          { orderId: inputs.search },
+          { tempId: inputs.search },
+          { phone: inputs.search },
+          { cnno: inputs.search },
+        ],
+      },
+      sort: "id DESC",
+      limit: 1,
+    });
 
     let total = 0;
+    let order = null;
     let products = null;
-    if (_order_summary) {
-      total = +_order_summary.codAmount;
-      products = _order_summary.orderObject;
-    } else if (order) {
-      total = +order.total_amount;
-      products = JSON.parse(order.order_object);
+    if (_order_summary.length) {
+      total = +_order_summary[0].codAmount;
+      products = _order_summary[0].orderObject;
+      order = { id: _order_summary[0].id, orderId: _order_summary[0].orderId };
     } else {
       return res.status(400).json({
         order: {
@@ -55,7 +51,7 @@ module.exports = {
       });
     }
 
-    return res.json({ products, total });
+    return res.json({ products, total, order });
   },
 
   localSummary: async (req, res) => {
@@ -131,7 +127,6 @@ module.exports = {
 
     try {
       const _order = await Order.findOne({ id: inputs.id });
-      const _local = await OrderLocal.findOne({ id: inputs.id });
 
       if (!_order) {
         return res.status(400).json({ message: "Order is not available." });
@@ -143,7 +138,9 @@ module.exports = {
 
       let total = 0;
       let totalItems = 0;
+      let isPaid = false;
       let description = "";
+      const productIds = [];
       const products = JSON.parse(_order.order_object);
       products.forEach((item) => {
         total += +item.itemPrice;
@@ -151,13 +148,18 @@ module.exports = {
         if (item.id < 1000000) {
           totalItems++;
           description += item.name.replace(/\s/g, "_");
+          productIds.push(+item.id);
+        } else if (item.id > 1000000 && item.name.indexOf("(-)Stripe Confirmation Id") !== -1 && item.itemPrice < 0) {
+          isPaid = true;
         }
       });
 
-      if (_order.city.toLowerCase() === "lahore") {
-        total += 200;
-      } else {
-        total += 250;
+      if (!isPaid) {
+        if (_order.city.toLowerCase() === "lahore") {
+          total += 200;
+        } else {
+          total += 250;
+        }
       }
 
       const riderCities = await Order.cityMapping();
@@ -194,8 +196,6 @@ module.exports = {
           username: _order.username,
         });
 
-        console.log("cnumRes:", cnumRes);
-
         consigneeNo = cnumRes.CNUM;
       } else {
         const cities = await sails.helpers.adminCallCourierCities();
@@ -217,8 +217,6 @@ module.exports = {
           username: _order.username,
         });
 
-        console.log("cnnoRes:", cnnoRes);
-
         consigneeNo = cnnoRes.CNNO;
       }
 
@@ -226,14 +224,43 @@ module.exports = {
         return res.status(400).json({ message: "Consignee no is not available." });
       }
 
-      _order.pre_cnno = consigneeNo;
-      _order.pre_cnno_price = total.toString();
+      const { moment } = sails.config.globals;
+      const { Buffer } = require("node:buffer");
 
-      if (_local) {
-        delete _order.id;
-        await OrderLocal.updateOne({ id: _local.id }).set({ ..._order });
+      const datetime = moment().format("YYYY-MM-DD HH:mm:ss");
+
+      const _update = {
+        orderTempId: _order.temp_id,
+        username: _order.username,
+        address: _order.address,
+        phone: _order.phone,
+        city: _order.city,
+
+        courierName: isRider ? "rider_logistics" : "call_courier",
+        cnno: consigneeNo,
+        itemsCount: productIds.length.toString(),
+        itemsInOrder: productIds.join(","),
+        codAmount: total.toString(),
+        orderObject: products,
+        orderId: _order.id.toString(),
+        printedBy: "dispatch_office",
+
+        orderAt: datetime,
+        printedAt: datetime,
+        createdAt: datetime,
+      };
+
+      const _summary = await OrderSummaryLocal.find({
+        where: { itemsCount: productIds.length.toString(), orderId: _order.id.toString(), itemsInOrder: productIds.join(",") },
+        sort: "id DESC",
+        limit: 1,
+      });
+      if (_summary.length) {
+        await OrderSummaryLocal.updateOne({ id: _summary[0].id }).set({ ..._summary[0], ..._update });
       } else {
-        await OrderLocal.create({ ..._order });
+        const fetchSummary = await OrderSummaryLocal.create({ ..._update }).fetch();
+        const tempId = Buffer.from(fetchSummary.id.toString()).toString("base64");
+        await OrderSummaryLocal.updateOne({ id: fetchSummary.id }).set({ tempId });
       }
 
       await Order.updateOne({ id: inputs.id }).set({ pre_cnno: consigneeNo, pre_cnno_price: total.toString() });

@@ -8,8 +8,8 @@ module.exports = {
 
   attributes: {
     tempId: {
-      required: true,
       type: "string",
+      allowNull: true,
       columnName: "temp_id",
     },
 
