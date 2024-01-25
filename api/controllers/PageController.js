@@ -38,7 +38,15 @@ module.exports = {
       }
     }
 
-    if (!_order_summary) {
+    let total = 0;
+    let products = null;
+    if (_order_summary) {
+      total = +_order_summary.codAmount;
+      products = _order_summary.orderObject;
+    } else if (order) {
+      total = +order.total_amount;
+      products = JSON.parse(order.order_object);
+    } else {
       return res.status(400).json({
         order: {
           message: "Order not found!",
@@ -46,9 +54,6 @@ module.exports = {
         },
       });
     }
-
-    const total = +_order_summary.codAmount;
-    const products = _order_summary.orderObject;
 
     return res.json({ products, total });
   },
