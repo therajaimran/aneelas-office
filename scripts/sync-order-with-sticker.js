@@ -4,8 +4,10 @@ module.exports = {
   fn: async function () {
     await OrderSummaryLocal.stream({
       where: {
-        or: [{ orderTempId: null }, { orderObject: null }],
+        orderTempId: null,
       },
+      sort: "id ASC",
+      limit: 1000,
     }).eachRecord(async (summary, proceed) => {
       console.log("Processing summary:", summary.id, summary.orderId);
 
@@ -39,6 +41,8 @@ module.exports = {
         }
 
         await OrderSummaryLocal.updateOne({ id: summary.id }).set({ ..._update });
+
+        // await Utility.delay(299);
       }
 
       return proceed();
