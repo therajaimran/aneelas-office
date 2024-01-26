@@ -47,8 +47,8 @@ module.exports = {
     },
 
     cnno: {
-      required: true,
       type: "string",
+      allowNull: true,
     },
 
     itemsCount: {
