@@ -99,6 +99,7 @@ module.exports = {
       cnno: inputs.summary.cnno,
       itemsCount: inputs.summary.items_count,
       itemsInOrder: inputs.summary.items_in_order,
+      productFullId: inputs.summary.product_full_id,
       codAmount: inputs.summary.cod_amount,
       orderObject: inputs.summary.order_object,
       orderId: inputs.summary.order_id,

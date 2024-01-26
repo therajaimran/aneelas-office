@@ -63,6 +63,12 @@ module.exports = {
       allowNull: true,
     },
 
+    productFullId: {
+      type: "string",
+      columnName: "product_full_id",
+      allowNull: true,
+    },
+
     codAmount: {
       type: "string",
       columnName: "cod_amount",
