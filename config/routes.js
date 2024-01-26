@@ -11,6 +11,7 @@
 module.exports.routes = {
   "GET /": { controller: "PageController", action: "homepage" },
   "GET /barcode": { controller: "BarcodeController", action: "barcode" },
+  "GET /orders/print-sticker": { controller: "PageController", action: "printSticker" },
   "POST /orders/find-products": { controller: "PageController", action: "findProducts" },
 
   "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },

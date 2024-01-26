@@ -1,0 +1,21 @@
+<h1>Printing Sticker</h1>
+
+<script>
+  window.onload = function () {
+    setTimeout(function () {
+      window.print();
+    }, 399);
+
+    window.addEventListener("afterprint", (e) => {
+      console.log("After print", e);
+
+      setTimeout(function () {
+        if (window.opener) {
+          const customEvent = new CustomEvent("print-sticker-complete", { detail: { message: "sticker printed!" } });
+          window.opener.dispatchEvent(customEvent);
+          window.close();
+        }
+      }, 299);
+    });
+  };
+</script>

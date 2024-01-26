@@ -8,6 +8,8 @@
 module.exports = {
   homepage: async (req, res) => res.view("pages/homepage", { title: "Validate Order Products" }),
 
+  printSticker: async (req, res) => res.view("pages/print-sticker", { title: "Print Sticker" }),
+
   findProducts: async (req, res) => {
     const inputs = req.allParams();
 
