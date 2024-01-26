@@ -14,8 +14,8 @@ module.exports = {
     },
 
     orderTempId: {
-      required: true,
       type: "string",
+      allowNull: true,
       columnName: "order_temp_id",
     },
 
