@@ -51,6 +51,21 @@ module.exports = {
       allowNull: true,
     },
 
+    pre_cnno: {
+      type: "string",
+      allowNull: true,
+    },
+
+    pre_cnno_price: {
+      type: "string",
+      allowNull: true,
+    },
+
+    status: {
+      type: "string",
+      allowNull: true,
+    },
+
     itemsCount: {
       required: true,
       type: "string",

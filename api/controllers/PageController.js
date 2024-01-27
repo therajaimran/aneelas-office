@@ -70,7 +70,6 @@ module.exports = {
     }
 
     await OrderSummaryLocal.create({
-      id: inputs.summary.id,
       tempId: inputs.summary.temp_id,
       orderTempId: inputs.summary.order_temp_id,
       warehouseAt: inputs.summary.warehouse_at,
@@ -139,134 +138,13 @@ module.exports = {
         return res.status(400).json({ message: "Order city is not available." });
       }
 
-      let total = 0;
-      let totalItems = 0;
-      let isPaid = false;
-      let description = "";
-      const productIds = [];
-      const products = JSON.parse(_order.order_object);
-      products.forEach((item) => {
-        total += +item.itemPrice;
-
-        if (item.id < 1000000) {
-          totalItems++;
-          description += item.name.replace(/\s/g, "_");
-          productIds.push(+item.id);
-        } else if (item.id > 1000000 && item.name.indexOf("(-)Stripe Confirmation Id") !== -1 && item.itemPrice < 0) {
-          isPaid = true;
-        }
-      });
-
-      if (!isPaid) {
-        if (_order.city.toLowerCase() === "lahore") {
-          total += 200;
-        } else {
-          total += 250;
-        }
-      }
-
-      const riderCities = await Order.cityMapping();
-
-      let isRider = false;
-      if (_order.city) {
-        riderCities.forEach((mapping) => {
-          if (_order.city.toLowerCase() === mapping.rider.toLowerCase()) {
-            isRider = true;
-          }
-        });
-      }
-
-      let consigneeNo = null;
-      if (isRider) {
-        const cities = await sails.helpers.adminRiderLogisticsCities();
-
-        let cityId = null;
-        cities.forEach((item) => {
-          if (_order.city.toLowerCase() === item.description.toLowerCase()) {
-            cityId = item.title;
-          }
-        });
-
-        const cnumRes = await sails.helpers.createRiderLogisticsConsigneeNo.with({
-          total,
-          cityId,
-          totalItems,
-          weight: "",
-          description: "",
-          orderId: _order.id,
-          phone: _order.phone,
-          address: _order.address,
-          username: _order.username,
-        });
-
-        consigneeNo = cnumRes.CNUM;
+      if (_order && _order.order_object && _order.order_object.startsWith('[{"id":')) {
+        _order.order_object = JSON.parse(_order.order_object);
       } else {
-        const cities = await sails.helpers.adminCallCourierCities();
-
-        let cityId = null;
-        Object.keys(cities).forEach((key) => {
-          if (_order.city.toUpperCase() === cities[key]) {
-            cityId = +key;
-          }
-        });
-
-        const cnnoRes = await sails.helpers.createCallCourierConsigneeNo.with({
-          total,
-          cityId,
-          description,
-          city: _order.city,
-          phone: _order.phone,
-          address: _order.address,
-          username: _order.username,
-        });
-
-        consigneeNo = cnnoRes.CNNO;
+        _order.order_object = [];
       }
 
-      if (!consigneeNo) {
-        return res.status(400).json({ message: "Consignee no is not available." });
-      }
-
-      const { moment } = sails.config.globals;
-      const { Buffer } = require("node:buffer");
-
-      const datetime = moment().format("YYYY-MM-DD HH:mm:ss");
-
-      const _update = {
-        orderTempId: _order.temp_id,
-        username: _order.username,
-        address: _order.address,
-        phone: _order.phone,
-        city: _order.city,
-
-        courierName: isRider ? "rider_logistics" : "call_courier",
-        cnno: consigneeNo,
-        itemsCount: productIds.length.toString(),
-        itemsInOrder: productIds.join(","),
-        codAmount: total.toString(),
-        orderObject: products,
-        orderId: _order.id.toString(),
-        printedBy: "dispatch_office",
-
-        orderAt: datetime,
-        printedAt: datetime,
-        createdAt: datetime,
-      };
-
-      const _summary = await OrderSummaryLocal.find({
-        where: { itemsCount: productIds.length.toString(), orderId: _order.id.toString(), itemsInOrder: productIds.join(",") },
-        sort: "id DESC",
-        limit: 1,
-      });
-      if (_summary.length) {
-        await OrderSummaryLocal.updateOne({ id: _summary[0].id }).set({ ..._summary[0], ..._update });
-      } else {
-        const fetchSummary = await OrderSummaryLocal.create({ ..._update }).fetch();
-        const tempId = Buffer.from(fetchSummary.id.toString()).toString("base64");
-        await OrderSummaryLocal.updateOne({ id: fetchSummary.id }).set({ tempId });
-      }
-
-      await Order.updateOne({ id: inputs.id }).set({ pre_cnno: consigneeNo, pre_cnno_price: total.toString() });
+      await Utility.generateCNNO(_order);
 
       return res.json({ message: "Order saved successfully and pre-cnno generated." });
     } catch (e) {
