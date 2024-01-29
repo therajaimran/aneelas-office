@@ -83,6 +83,8 @@ module.exports = {
 
     const sticker = await OrderSummaryLocal.updateOne({ id: inputs.sticker }).set({ pre_cnno: "000000", pre_cnno_price: null, status: null });
 
+    await Order.updateOne({ id: sticker.orderId }).set({ status: "confirmed", pre_cnno: "000000", pre_cnno_price: null });
+
     return res.json(sticker);
   },
 
