@@ -44,6 +44,16 @@ module.exports = {
     });
 
     if (!_order_summary.length) {
+      _order_summary = await OrderSummaryLocal.find({
+        where: {
+          productFullId: { contains: inputs.search },
+        },
+        sort: "id DESC",
+        limit: 1,
+      });
+    }
+
+    if (!_order_summary.length) {
       return res.status(400).json({
         order: {
           message: "Order not found!",

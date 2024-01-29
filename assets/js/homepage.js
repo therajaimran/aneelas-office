@@ -19,7 +19,7 @@ jQuery(document).ready(function ($) {
       const search = $t.val();
       const checkProduct = search.split("_");
 
-      if (checkProduct.length === 2 && checkProduct[0].length < 6) {
+      if (checkProduct.length === 2 && checkProduct[0].length < 6 && processingOrder.order !== null) {
         const $qty = $(`div[data-product="${checkProduct[0]}"]`);
 
         const productId = checkProduct[0];
