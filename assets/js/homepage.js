@@ -1,5 +1,6 @@
 jQuery(document).ready(function ($) {
   const $amount = $("#order_amount").hide();
+  const $duplicate = $("#order_duplicate").hide();
   const $loader = $(".page-loader-container").hide();
   const $productContainer = $("#order_products_list");
 
@@ -7,9 +8,10 @@ jQuery(document).ready(function ($) {
     $("#master_input").focus();
   }, 1999);
 
-  const processingOrder = { products: {}, order: null };
+  const processingOrder = { products: {}, order: null, printed: null };
 
-  $("#master_input").keypress(async function (e) {
+  $("#master_input").keypress(function (e) {
+    const deviceId = localStorage.getItem("device_id");
     const keycode = e.keyCode ? e.keyCode : e.which;
 
     if (keycode == 13) {
@@ -76,32 +78,75 @@ jQuery(document).ready(function ($) {
           }
         });
 
-        if (canPrint) {
-          console.log("Printing order:", canPrint);
-          window.open("/orders/orders/print-sticker", "_blank");
-          const tabResponse = await new Promise((resolve) => window.addEventListener("print-sticker-complete", resolve));
-          console.log("sticker printed", tabResponse.detail);
+        if (canPrint || processingOrder.printed) {
+          const products = [];
+          const sticker = processingOrder.order.id;
+          Object.values(processingOrder.products).forEach((item) => {
+            if (item.length) {
+              item.forEach((productFull) => {
+                products.push(productFull);
+              });
+            }
+          });
+
+          const duplicate = !!processingOrder.printed;
+
+          $loader.show();
+          $.post("/orders/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
+            .then(async function (confirmSticker) {
+              console.log("confirm sticker res:", confirmSticker);
+
+              window.open(`/orders/orders/print-sticker/${confirmSticker.id}`, "_blank");
+              const tabResponse = await new Promise((resolve) => window.addEventListener("print-sticker-complete", resolve));
+              console.log("sticker printed", tabResponse.detail);
+
+              $t.val("").focus();
+
+              $productContainer.empty();
+              processingOrder.order = null;
+              processingOrder.products = {};
+              processingOrder.printed = null;
+              $amount.hide().find("b").text("");
+              $duplicate.hide().find("b").text("");
+
+              toastr.success("Order has been processed successfully!", "Sticker");
+            })
+            .catch(function (res) {
+              if (res && res.responseJSON) {
+                Object.keys(res.responseJSON).forEach(function (key) {
+                  const error = res.responseJSON[key];
+                  toastr.error(error.message, error.rule.toCapitalizeAllWords());
+                });
+              }
+            })
+            .always(function () {
+              $loader.hide();
+            });
         } else {
-          $("#order_products_list").addClass("shark-it");
+          $("#order_products_list").addClass("shake-it");
 
           setTimeout(function () {
-            $("#order_products_list").removeClass("shark-it");
+            $("#order_products_list").removeClass("shake-it");
           }, 799);
 
           toastr.error("Items quantity is not completed.", "Quantity");
-        }
 
-        $t.val("").focus();
+          $t.val("").focus();
+        }
       } else if (search) {
         $t.blur();
         $loader.show();
         $productContainer.empty();
+        processingOrder.order = null;
         processingOrder.products = {};
+        processingOrder.printed = null;
         $amount.hide().find("b").text("");
+        $duplicate.hide().find("b").text("");
 
         $.post("/orders/orders/find-products", { search }, null, "json")
           .then(function (res) {
             if (res.products) {
+              processingOrder.printed = res.printed;
               processingOrder.order = res.order;
 
               let totalItems = 0;
@@ -114,6 +159,10 @@ jQuery(document).ready(function ($) {
 
               setTimeout(function () {
                 $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems})`);
+
+                if (res.printed) {
+                  $duplicate.slideDown().find("b").text(res.printed);
+                }
               });
             } else {
               toastr.error("Sticker do not have sufficient values.", "Invalid");
@@ -169,6 +218,16 @@ jQuery(document).ready(function ($) {
       </div>
     `);
   };
+
+  let device_id = localStorage.getItem("device_id");
+  if (!device_id || device_id.length < 64) {
+    $.get("/orders/get-device-id", function (res) {
+      device_id = localStorage.getItem("device_id");
+      if (!device_id || device_id.length < 64) {
+        localStorage.setItem("device_id", res.device_id);
+      }
+    });
+  }
 });
 
 jQuery.debounce = function (func, timeout = 300) {

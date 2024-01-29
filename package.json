@@ -25,6 +25,7 @@
   },
   "scripts": {
     "dev": "nodemon --watch api --watch config app.js",
+    "dev-query": "DEBUG=query nodemon --watch api --watch config app.js",
     "prod": "NODE_ENV=production node app.js",
     "prettier": "prettier --plugin=prettier-plugin-ejs --write ./"
   },

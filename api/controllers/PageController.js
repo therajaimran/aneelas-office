@@ -8,7 +8,13 @@
 module.exports = {
   homepage: async (req, res) => res.view("pages/homepage", { title: "Validate Order Products" }),
 
-  printSticker: async (req, res) => res.view("pages/print-sticker", { title: "Print Sticker" }),
+  getDeviceId: async (req, res) => {
+    const crypto = require("node:crypto");
+
+    const device_id = crypto.randomBytes(32).toString("hex");
+
+    return res.json({ device_id });
+  },
 
   findProducts: async (req, res) => {
     const inputs = req.allParams();
@@ -23,7 +29,7 @@ module.exports = {
       return res.status(400).json(VS.errors);
     }
 
-    const _order_summary = await OrderSummaryLocal.find({
+    let _order_summary = await OrderSummaryLocal.find({
       where: {
         or: [
           { orderTempId: inputs.search },
@@ -37,14 +43,7 @@ module.exports = {
       limit: 1,
     });
 
-    let total = 0;
-    let order = null;
-    let products = null;
-    if (_order_summary.length) {
-      total = +_order_summary[0].codAmount;
-      products = _order_summary[0].orderObject;
-      order = { id: _order_summary[0].id, orderId: _order_summary[0].orderId };
-    } else {
+    if (!_order_summary.length) {
       return res.status(400).json({
         order: {
           message: "Order not found!",
@@ -53,7 +52,176 @@ module.exports = {
       });
     }
 
-    return res.json({ products, total, order });
+    _order_summary = { ..._order_summary[0] };
+
+    const total = +_order_summary.codAmount;
+    const products = _order_summary.orderObject;
+    const order = { id: _order_summary.id, orderId: _order_summary.orderId };
+
+    const printed = await OrderSummaryLocal.count({
+      status: ["dispatch_rider_logistics", "dispatch_reverse_pickup", "dispatch_call_courier", "dispatch_temp_id", "dispatch_trax"],
+      orderId: _order_summary.orderId,
+      pre_cnno: null,
+    });
+
+    return res.json({ products, total, order, printed });
+  },
+
+  confirmSticker: async (req, res) => {
+    const inputs = req.allParams();
+
+    const VS = Validator(inputs, {
+      sticker: "required|integer",
+      deviceId: "required|string|length:64,64",
+      duplicate: "required|boolean",
+
+      products: "requiredIf:duplicate,false|array",
+      "products.*": "requiredIf:duplicate,false|string",
+    });
+
+    const matched = await VS.check();
+
+    if (!matched) {
+      return res.status(400).json(VS.errors);
+    }
+
+    const sticker = await OrderSummaryLocal.findOne({ id: inputs.sticker });
+
+    if (!sticker) {
+      return res.status(400).json({
+        order: {
+          message: "Order for processing not found!",
+          rule: "not found",
+        },
+      });
+    }
+
+    let cnno = null;
+    let status = null;
+    let products = [];
+    if (inputs.duplicate == "true") {
+      const printed = await OrderSummaryLocal.find({
+        status: ["dispatch_rider_logistics", "dispatch_reverse_pickup", "dispatch_call_courier", "dispatch_temp_id", "dispatch_trax"],
+        productFullId: { "!=": null },
+        orderId: sticker.orderId,
+        pre_cnno: null,
+      });
+
+      let device = printed.find((item) => item.printedBy === inputs.deviceId);
+
+      if (!device) {
+        device = printed.find((item) => item.printedBy.length === 64);
+
+        if (!device) {
+          device = printed[0];
+        }
+      }
+
+      cnno = device.cnno;
+      status = device.status;
+      products = device.productFullId.split(",");
+    } else {
+      cnno = sticker.pre_cnno;
+      products = inputs.products;
+      status = `dispatch_${sticker.courierName}`;
+    }
+
+    const { moment } = sails.config.globals;
+    const { Buffer } = require("node:buffer");
+
+    const datetime = moment().format("YYYY-MM-DD HH:mm:ss");
+
+    const _update = {
+      ...sticker,
+
+      tempId: null,
+      pre_cnno: null,
+
+      cnno,
+      status,
+      printedBy: inputs.deviceId,
+      itemsInOrder: products.join(","),
+      productFullId: products.join(","),
+      itemsCount: products.length.toString(),
+
+      packedAt: datetime,
+      printedAt: datetime,
+      createdAt: datetime,
+
+      arrivedAt: null,
+      dispatchAt: null,
+      returnedAt: null,
+      deliveredAt: null,
+      defecatedAt: null,
+      warehouseAt: null,
+      statusInvoice: null,
+      dispatchRider: null,
+      deliveryCharges: null,
+      paymentReceived: null,
+      statusInvoiceAt: null,
+      dispatchDelivery: null,
+      deliveryChargesAt: null,
+      paymentReceivedAt: null,
+      trackingStatusCheckAt: null,
+      trackingStatusInvoice: null,
+      trackingStatusInvoiceAt: null,
+      deliveryChargesInvoiceNo: null,
+      paymentReceivedInvoiceNo: null,
+      trackingStatusTransactionAt: null,
+    };
+
+    delete _update.id;
+
+    let fetchSummary = await OrderSummaryLocal.create({ ..._update }).fetch();
+    const tempId = Buffer.from(fetchSummary.id.toString()).toString("base64");
+    fetchSummary = await OrderSummaryLocal.updateOne({ id: fetchSummary.id }).set({ tempId });
+
+    return res.json(fetchSummary);
+  },
+
+  printSticker: async (req, res) => {
+    const inputs = req.allParams();
+    const { moment } = sails.config.globals;
+
+    const sticker = await OrderSummaryLocal.findOne({ id: inputs.id });
+
+    let symbol = "";
+    const statusArray = sticker.status.split("dispatch_");
+
+    // if (sticker.status === "dispatch_call_courier" || sticker.status === "dispatch_rider_logistics") {
+    //   symbol = "@";
+    // } else
+    if (sticker.status === "dispatch_call_courier" || sticker.status === "dispatch_rider_logistics" || sticker.status === "dispatch_trax") {
+      symbol = "#";
+    } else if (sticker.status === "dispatch_local_delivery") {
+      symbol = "+";
+    }
+
+    const statusOrder = statusArray[1]?.toUpperCase();
+
+    const lahore = sticker.city.toLowerCase() === "lahore" ? "********" : "";
+
+    const date_insert = moment(sticker.orderAt).format("YYYY-MM-DD HH:mm");
+    const sticker_time = moment(sticker.packedAt).format("YYYY-MM-DD HH:mm");
+
+    const printed = await OrderSummaryLocal.count({
+      status: ["dispatch_rider_logistics", "dispatch_reverse_pickup", "dispatch_call_courier", "dispatch_temp_id", "dispatch_trax"],
+      orderId: sticker.orderId,
+      id: { "!=": sticker.id },
+      pre_cnno: null,
+    });
+
+    return res.view("pages/print-sticker", {
+      title: "Print Sticker",
+      duplicate: printed,
+      sticker,
+      statusOrder,
+      lahore,
+      symbol,
+      date_insert,
+      sticker_time,
+      layout: false,
+    });
   },
 
   localSummary: async (req, res) => {
@@ -109,6 +277,8 @@ module.exports = {
       packedAt: inputs.summary.packed_at,
       printedBy: inputs.summary.printed_by,
       createdAt: inputs.summary.created_at,
+
+      status: `dispatch_${inputs.summary.courier_name || "temp_id"}`,
     });
 
     return res.json({ message: "Summary saved successfully." });

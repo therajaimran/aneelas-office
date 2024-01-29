@@ -1,21 +1,204 @@
-<h1>Printing Sticker</h1>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Printing Sticker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<script>
-  window.onload = function () {
-    setTimeout(function () {
-      window.print();
-    }, 399);
+    <link rel="stylesheet" href="/orders/dependencies/font-awesome/css/font-awesome.min.css" />
 
-    window.addEventListener("afterprint", (e) => {
-      console.log("After print", e);
+    <style>
+      @font-face {
+        font-family: CeraPro;
+        src: url("/orders/dependencies/fonts/CeraPro-Medium.otf");
+      }
 
-      setTimeout(function () {
-        if (window.opener) {
-          const customEvent = new CustomEvent("print-sticker-complete", { detail: { message: "sticker printed!" } });
-          window.opener.dispatchEvent(customEvent);
-          window.close();
+      @font-face {
+        font-family: CeraPro;
+        font-weight: bold;
+        src: url("/orders/dependencies/fonts/CeraPro-Bold.otf");
+      }
+
+      .status {
+        font-size: 30px;
+        margin-left: 1%;
+      }
+
+      #title_div {
+        margin-top: 1%;
+        font-size: 27px;
+        font-weight: bold;
+        font-family: CeraPro;
+      }
+
+      .fontApply {
+        font-weight: bold;
+        font-family: CeraPro;
+      }
+
+      .wao,
+      .fa-circle,
+      .fa-hashtag,
+      .fa-plus-circle,
+      .fa-exclamation-triangle {
+        font-size: 30px;
+      }
+
+      .fa-whatsapp {
+        font-size: 40px;
+        color: green;
+      }
+
+      .address {
+        font-size: 22px;
+        font-weight: 800;
+        margin-top: 4%;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .barcode svg {
+        transform: scale(1.5, 1) !important;
+      }
+
+      th,
+      td,
+      table {
+        width: 100%;
+        border: 1px solid #575757;
+      }
+    </style>
+
+    <script src="/orders/dependencies/jquery-3.7.1.min.js"></script>
+    <script src="/orders/dependencies/barcode.min.js"></script>
+    <script src="/orders/dependencies/qrcode.min.js"></script>
+
+    <script>
+      Number.prototype.zeroPadding = function () {
+        const ret = "" + this.valueOf();
+        return ret.length == 1 ? "0" + ret : ret;
+      };
+    </script>
+  </head>
+  <body>
+    <table>
+      <tbody>
+        <tr>
+          <td class="fontApply text-center" id="print-headers"></td>
+        </tr>
+        <tr class="barcode">
+          <td class="fontApply text-center">
+            <svg id="barcode89"></svg>
+          </td>
+        </tr>
+        <tr>
+          <td class="fontApply text-center" id="print-customer-content"></td>
+        </tr>
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; justify-content: space-between">
+              <div class="fontApply text-center address" style="margin: 4px 0 0; width: 220px">
+                <img src="/orders/images/logo_aleena.png" style="width: 90%" alt="" />
+                <br />
+                (Branded Items)
+                <br />
+                <span style="display: inline-block">
+                  <i class="fa fa-whatsapp" style="font-size: 24px"></i>
+                  <span style="font-size: 24px">03004474046</span>
+                </span>
+              </div>
+
+              <div id="qrcode-container"></div>
+
+              <div class="fontApply text-center" style="margin-right: 4px; width: 312px; font-size: 18px" id="print-page-footer"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <script>
+      jQuery(document).ready(function ($) {
+        const qrcode = new QRCode("qrcode-container", {
+          text: "<%- sticker.tempId %>",
+          width: 100,
+          height: 100,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H,
+        });
+
+        let symbol = "<%- symbol %>";
+        let statusOrder = "<%- statusOrder %>";
+        if (statusOrder == "CALL_COURIER") {
+          symbol = "<i class='fa fa-hashtag'></i>";
+        } else if (statusOrder == "TRAX") {
+          symbol = "<span class='wao'>◥</span>";
+        } else if (statusOrder == "LOCAL_DELIVERY") {
+          symbol = "<i class='fa fa-plus-circle'></i>";
         }
-      }, 299);
-    });
-  };
-</script>
+
+        const lahore = "<%- lahore %>";
+        $("#print-headers").html(`${symbol}<span class="status">${statusOrder} ${lahore}</span>`);
+
+        const order_id = "<%- sticker.orderId %>";
+        const CNNO = "<%- sticker.cnno %>";
+        if (CNNO) {
+          JsBarcode("#barcode89", CNNO, {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 40,
+          });
+        } else if (order_id) {
+          JsBarcode("#barcode89", order_id, {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 40,
+          });
+        }
+
+        const city = "<%- sticker.city.toUpperCase() %>";
+        const phone = "<%- sticker.phone %>";
+        const address = "<%- sticker.address %>";
+        const username = "<%- sticker.username %>";
+        const total_qty = "<%- sticker.itemsCount %>";
+        const total_amount = "<%- (+sticker.codAmount).toLocaleString('en-US') %>";
+
+        $("#print-customer-content")
+          .html(`<div id="title_div"><b>COD AMOUNT: PKR ${total_amount} (Items: ${total_qty})</b></div>`)
+          .append(`<h2 style="font-size:27px;">To: ${username}<br>${address}<br>City: ${city.toUpperCase()}</h2>`)
+          .append(`<h1 style="text-decoration:underline;color:black">${phone}</h1>`);
+
+        const printed_by = "office";
+        const duplicate = "<%- duplicate %>";
+        const date_insert = "<%- date_insert %>";
+        const sticker_time = "<%- sticker_time %>";
+        const item_ids = "<%- sticker.productFullId %>";
+
+        $("#print-page-footer")
+          .html(`<div>Item id: ${item_ids}</div>`)
+          .append(`<div><h3 style="margin:8px 0 0">Order Date: ${date_insert}</h3></div>`)
+          .append(`<div>Packing Time: ${sticker_time}</div>`)
+          .append(`<div style="margin:8px 0 0">Printed By: ${printed_by}${duplicate ? " (duplicate)" : ""}</div>`);
+
+        setTimeout(function () {
+          window.print();
+        }, 399);
+
+        window.addEventListener("afterprint", (e) => {
+          console.log("After print:", e);
+
+          setTimeout(function () {
+            if (window.opener) {
+              const customEvent = new CustomEvent("print-sticker-complete", { detail: { message: "sticker printed!" } });
+              window.opener.dispatchEvent(customEvent);
+              window.close();
+            }
+          }, 299);
+        });
+      });
+    </script>
+  </body>
+</html>

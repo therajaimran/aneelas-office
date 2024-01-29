@@ -10,5 +10,7 @@
  */
 
 module.exports.bootstrap = async function () {
-  Utility.initLiveLocalOrders();
+  if (sails.config.environment !== "development") {
+    Utility.initLiveLocalOrders();
+  }
 };

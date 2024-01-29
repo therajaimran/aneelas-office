@@ -9,10 +9,14 @@
  */
 
 module.exports.routes = {
-  "GET /": { controller: "PageController", action: "homepage" },
-  "GET /barcode": { controller: "BarcodeController", action: "barcode" },
-  "GET /orders/print-sticker": { controller: "PageController", action: "printSticker" },
+  "GET  /get-device-id": { controller: "PageController", action: "getDeviceId" },
+
+  "GET  /": { controller: "PageController", action: "homepage" },
+  "GET  /barcode": { controller: "BarcodeController", action: "barcode" },
   "POST /orders/find-products": { controller: "PageController", action: "findProducts" },
+
+  "GET  /orders/print-sticker/:id": { controller: "PageController", action: "printSticker" },
+  "POST /orders/confirm-sticker": { controller: "PageController", action: "confirmSticker" },
 
   "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },
   "POST /order-summary-local": { controller: "PageController", action: "localSummary" },
