@@ -181,7 +181,7 @@
           .html(`<div>Item id: ${item_ids}</div>`)
           .append(`<div><h3 style="margin:8px 0 0">Order Date: ${date_insert}</h3></div>`)
           .append(`<div>Packing Time: ${sticker_time}</div>`)
-          .append(`<div style="margin:8px 0 0">Printed By: ${printed_by}${duplicate ? " (duplicate)" : ""}</div>`);
+          .append(`<div style="margin:8px 0 0">Printed By: ${printed_by}${+duplicate ? " (duplicate)" : ""}</div>`);
 
         setTimeout(function () {
           window.print();

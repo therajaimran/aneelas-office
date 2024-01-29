@@ -62,6 +62,34 @@ jQuery(document).ready(function ($) {
 
         $t.val("").focus();
         console.log(processingOrder);
+      } else if (search === "SKIP") {
+        $loader.show();
+        const sticker = processingOrder.order.id;
+        $.post("/orders/orders/skip-sticker", { sticker, deviceId }, null, "json")
+          .then(async function (skipSticker) {
+            console.log("skip sticker res:", skipSticker);
+
+            $t.val("").focus();
+            $productContainer.empty();
+            processingOrder.order = null;
+            processingOrder.products = {};
+            processingOrder.printed = null;
+            $amount.hide().find("b").text("");
+            $duplicate.hide().find("b").text("");
+
+            toastr.warning("Order has been skipped successfully!", "Skipped");
+          })
+          .catch(function (res) {
+            if (res && res.responseJSON) {
+              Object.keys(res.responseJSON).forEach(function (key) {
+                const error = res.responseJSON[key];
+                toastr.error(error.message, error.rule.toCapitalizeAllWords());
+              });
+            }
+          })
+          .always(function () {
+            $loader.hide();
+          });
       } else if (search === "PRINT") {
         let canPrint = true;
         $("div[data-product]").each(function (i, e) {

@@ -16,6 +16,8 @@ module.exports.routes = {
   "POST /orders/find-products": { controller: "PageController", action: "findProducts" },
 
   "GET  /orders/print-sticker/:id": { controller: "PageController", action: "printSticker" },
+
+  "POST /orders/skip-sticker": { controller: "PageController", action: "skipSticker" },
   "POST /orders/confirm-sticker": { controller: "PageController", action: "confirmSticker" },
 
   "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },

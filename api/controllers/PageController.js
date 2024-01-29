@@ -67,6 +67,25 @@ module.exports = {
     return res.json({ products, total, order, printed });
   },
 
+  skipSticker: async (req, res) => {
+    const inputs = req.allParams();
+
+    const VS = Validator(inputs, {
+      sticker: "required|integer",
+      deviceId: "required|string|length:64,64",
+    });
+
+    const matched = await VS.check();
+
+    if (!matched) {
+      return res.status(400).json(VS.errors);
+    }
+
+    const sticker = await OrderSummaryLocal.updateOne({ id: inputs.sticker }).set({ pre_cnno: "000000", pre_cnno_price: null, status: null });
+
+    return res.json(sticker);
+  },
+
   confirmSticker: async (req, res) => {
     const inputs = req.allParams();
 
