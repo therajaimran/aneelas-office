@@ -240,6 +240,8 @@ module.exports = {
     const tempId = Buffer.from(fetchSummary.id.toString()).toString("base64");
     fetchSummary = await OrderSummaryLocal.updateOne({ id: fetchSummary.id }).set({ tempId });
 
+    await OrderSummaryLocal.updateOne({ id: sticker.id }).set({ pre_cnno: null, pre_cnno_price: null, status });
+
     return res.json(fetchSummary);
   },
 
