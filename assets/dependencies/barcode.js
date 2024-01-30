@@ -16,3 +16,15 @@ var datetime =
   currentdate.getMinutes() +
   ":" +
   currentdate.getSeconds();
+
+String.prototype.toCapitalizeCase = function () {
+  return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
+String.prototype.toCapitalizeAllWords = function () {
+  let splitStr = this.toLowerCase().split(" ");
+  for (let i = 0; i < splitStr.length; i++) {
+    splitStr[i] = splitStr[i].toCapitalizeCase();
+  }
+  return splitStr.join(" ");
+};
