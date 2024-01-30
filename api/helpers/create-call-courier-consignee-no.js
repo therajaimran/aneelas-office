@@ -48,16 +48,16 @@ module.exports = {
 
       const urlsParse = [
         `loginId=${total < 2500 ? loginTypes["meezan"] : loginTypes["cod"]}`,
-        `ConsigneeName=${username}`,
+        `ConsigneeName=${fixed_special_char(username)}`,
         `ConsigneeRefNo=${phone.slice(2)}`,
         `ConsigneeCellNo=${phone}`,
-        `Address=${username} Address ${address} City ${city.toUpperCase()}`,
+        `Address=${fixed_special_char(username)} Address ${fixed_special_char(address)} City ${city.toUpperCase()}`,
         "Origin=Lahore",
         `DestCityId=${cityId}`,
         `ServiceTypeId=${serviceType}`,
         "Pcs=1",
         "Weight=1",
-        `Description=${description}`,
+        `Description=${fixed_special_char(description)}`,
         "SelOrigin=Domestic",
         `CodAmount=${total}`,
         "SpecialHandling=false",
@@ -77,7 +77,15 @@ module.exports = {
 
       return result.data;
     } catch (e) {
+      console.log(e?.response?.data);
       return { status: 400, data: e?.response?.data?.error };
     }
   },
 };
+
+function fixed_special_char(data) {
+  data = data.replace(/&/g, "and");
+  data = data.replace(/#/g, "num");
+  data = data.replace(/(\r\n|\n|\r|\t)/gm, " ");
+  return data;
+}

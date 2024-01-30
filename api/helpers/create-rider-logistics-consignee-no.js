@@ -47,7 +47,7 @@ module.exports = {
         `ConsigneeName=${username}`,
         `ConsigneeRefNo=${orderId}`,
         `ConsigneeCellNo=${phone}`,
-        `Address=${address}`,
+        `Address=${fixed_special_char(address)}`,
         "OriginCityName=LHE",
         `DestCityName=${cityId}`,
         "ServiceTypeId=1", // 1=COD, 2=NON-COD
@@ -62,8 +62,6 @@ module.exports = {
         "apikey=zo(dCn4$LrMrPNaJ3dTbJzCtBCaiATBBwCwvFu0jT1pyExb!g)Bh7GI)0TQ)mWM6",
       ];
 
-      console.log(urlsParse);
-
       const result = await axios.get(`http://api.withrider.com/rider/v2/SaveBooking?${encodeURI(urlsParse.join("&"))}`);
 
       return result.data;
@@ -72,3 +70,10 @@ module.exports = {
     }
   },
 };
+
+function fixed_special_char(data) {
+  data = data.replace(/&/g, "and");
+  data = data.replace(/#/g, "num");
+  data = data.replace(/(\r\n|\n|\r|\t)/gm, " ");
+  return data;
+}

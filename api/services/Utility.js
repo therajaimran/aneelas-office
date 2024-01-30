@@ -28,6 +28,7 @@ exports.initLiveLocalOrders = function () {
       pre_cnno: null,
       // phone: "03006761160",
       status: ["confirmed", "on_hold"],
+      or: [{ phone: { startsWith: "03" } }, { phone: { startsWith: "92" } }, { phone: { startsWith: "0092" } }, { phone: { startsWith: "+92" } }],
     },
     limit: 1,
   }).exec(function (err, order) {
@@ -45,6 +46,7 @@ exports.initLiveLocalOrders = function () {
         console.log(`${datetime}:: Order found for local: ${order[0].id}`);
 
         writeFile(packingFile, JSON.stringify(content), { encoding: "utf8" }).then((res) => {
+          console.log(order[0].id);
           Utility.liveLocalOrders(order[0].id).then(() => {
             Utility.initLiveLocalOrders();
           });
@@ -67,7 +69,7 @@ exports.initLiveLocalOrders = function () {
 };
 
 exports.liveLocalOrders = async function (order) {
-  const _order = await Order.search(order.toString(), true);
+  const _order = await Order.findOne({ id: order });
 
   if (!_order) {
     return false;
@@ -145,10 +147,15 @@ exports.liveLocalOrders = async function (order) {
       status_total,
     );
 
+    console.log(deliveredTotal, returnedTotal);
+
     if (histories.length === 1 || deliveredTotal > returnedTotal) {
       await Utility.checkOrderSplit(_order);
     } else if (!deliveredTotal && returnedTotal > 10000) {
       // block user from every number and device ID
+      await Order.updateOne({ id: _order.id }).set({ pre_cnno: "000000" });
+    } else {
+      await Order.updateOne({ id: _order.id }).set({ pre_cnno: "000000" });
     }
   } else {
     return false;
@@ -269,8 +276,10 @@ exports.checkOrderSplit = async function (order) {
         _order.order_object = [];
       }
 
+      console.log("generateCNNO split");
       await Utility.generateCNNO(_order);
     } else if (demandProducts.length === 0 && order.order_object.length > 0) {
+      console.log("generateCNNO 0");
       await Utility.generateCNNO(order);
     }
   }
@@ -361,6 +370,7 @@ exports.generateCNNO = async function (_order) {
 
       consigneeNo = cnnoRes.CNNO;
     }
+    console.log("consigneeNo:", consigneeNo);
 
     if (consigneeNo) {
       const { moment } = sails.config.globals;

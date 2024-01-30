@@ -77,7 +77,7 @@ module.exports = {
           status: "confirmed",
           pre_cnno: { "!=": null },
           pre_cnno_price: { "!=": null },
-          productFullId: { contains: inputs.search.split("_")[0] },
+          itemsInOrder: { contains: inputs.search.split("_")[0] },
         },
         sort: "id DESC",
         limit: 1,
