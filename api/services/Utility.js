@@ -26,7 +26,7 @@ exports.initLiveLocalOrders = function () {
     select: ["id"],
     where: {
       pre_cnno: null,
-      phone: "03006761160",
+      // phone: "03006761160",
       status: ["confirmed", "on_hold"],
     },
     limit: 1,
@@ -38,7 +38,7 @@ exports.initLiveLocalOrders = function () {
     readFile(packingFile, { encoding: "utf8" }).then((content) => {
       content = JSON.parse(content);
 
-      if (order.length && content.fetched < 50) {
+      if (order.length && content.fetched < 10) {
         content.fetched++;
 
         const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
@@ -52,7 +52,7 @@ exports.initLiveLocalOrders = function () {
       } else {
         setTimeout(
           () => {
-            if (content.fetched < 50) {
+            if (content.fetched < 10) {
               const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
               console.log(`${datetime}:: Initiated Live to Local Orders`);
             }

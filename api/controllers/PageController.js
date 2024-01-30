@@ -74,7 +74,10 @@ module.exports = {
     if (!_order_summary.length) {
       _order_summary = await OrderSummaryLocal.find({
         where: {
-          productFullId: { contains: inputs.search },
+          status: "confirmed",
+          pre_cnno: { "!=": null },
+          pre_cnno_price: { "!=": null },
+          productFullId: { contains: inputs.search.split("_")[0] },
         },
         sort: "id DESC",
         limit: 1,
