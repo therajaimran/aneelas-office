@@ -78,7 +78,6 @@ jQuery(document).ready(function ($) {
           .then(async function (skipSticker) {
             console.log("skip sticker res:", skipSticker);
 
-            $t.val("").focus();
             $productContainer.empty();
             processingOrder.order = null;
             processingOrder.products = {};
@@ -87,6 +86,14 @@ jQuery(document).ready(function ($) {
             $duplicate.hide().find("b").text("");
 
             toastr.warning("Order has been skipped successfully!", "Skipped");
+
+            if (packingStart) {
+              $t.val("START_next")
+                .focus()
+                .trigger($.Event("keypress", { which: 13 }));
+            } else {
+              $t.val("").focus();
+            }
           })
           .catch(function (res) {
             if (res && res.responseJSON) {
