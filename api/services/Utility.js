@@ -25,28 +25,44 @@ exports.initLiveLocalOrders = function () {
   Order.find({
     select: ["id"],
     where: {
-      phone: "03006761160",
       pre_cnno: null,
+      phone: "03006761160",
       status: ["confirmed", "on_hold"],
     },
     limit: 1,
   }).exec(function (err, order) {
-    if (order.length) {
-      const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
-      console.log(`${datetime}:: Order found for local: ${order[0].id}`);
-      Utility.liveLocalOrders(order[0].id).then(() => {
-        Utility.initLiveLocalOrders();
-      });
-    } else {
-      setTimeout(
-        () => {
-          const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
-          console.log(`${datetime}:: Initiated Live to Local Orders`);
-          Utility.initLiveLocalOrders();
-        },
-        10 * 60 * 1000,
-      );
-    }
+    const { resolve } = require("node:path");
+    const { readFile, writeFile } = require("node:fs/promises");
+
+    const packingFile = resolve("./storage/fetch-counter.json");
+    readFile(packingFile, { encoding: "utf8" }).then((content) => {
+      content = JSON.parse(content);
+
+      if (order.length && content.fetched < 50) {
+        content.fetched++;
+
+        const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
+        console.log(`${datetime}:: Order found for local: ${order[0].id}`);
+
+        writeFile(packingFile, JSON.stringify(content), { encoding: "utf8" }).then((res) => {
+          Utility.liveLocalOrders(order[0].id).then(() => {
+            Utility.initLiveLocalOrders();
+          });
+        });
+      } else {
+        setTimeout(
+          () => {
+            if (content.fetched < 50) {
+              const datetime = sails.config.globals.moment().format("YYYY-MM-DD HH:mm:ss");
+              console.log(`${datetime}:: Initiated Live to Local Orders`);
+            }
+
+            Utility.initLiveLocalOrders();
+          },
+          10 * 60 * 1000,
+        );
+      }
+    });
   });
 };
 
