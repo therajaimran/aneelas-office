@@ -134,7 +134,7 @@
         let statusOrder = "<%- statusOrder %>";
         if (statusOrder == "CALL_COURIER") {
           symbol = "<i class='fa fa-hashtag'></i>";
-        } else if (statusOrder == "TRAX") {
+        } else if (statusOrder == "TRAX" || statusOrder == "RIDER_LOGISTICS") {
           symbol = "<span class='wao'>◥</span>";
         } else if (statusOrder == "LOCAL_DELIVERY") {
           symbol = "<i class='fa fa-plus-circle'></i>";
@@ -175,7 +175,7 @@
         const duplicate = "<%- duplicate %>";
         const date_insert = "<%- date_insert %>";
         const sticker_time = "<%- sticker_time %>";
-        const item_ids = "<%- sticker.productFullId %>";
+        const item_ids = "<%- sticker.itemsInOrder %>";
 
         $("#print-page-footer")
           .html(`<div>Item id: ${item_ids}</div>`)

@@ -16,6 +16,34 @@ module.exports = {
     return res.json({ device_id });
   },
 
+  startPacking: async (req, res) => {
+    const inputs = req.allParams();
+
+    const VS = Validator(inputs, {
+      deviceId: "required|string|length:64,64",
+    });
+
+    const matched = await VS.check();
+
+    if (!matched) {
+      return res.status(400).json(VS.errors);
+    }
+
+    const findOrder = await Packing.findOrder(inputs.deviceId);
+
+    if (!findOrder) {
+      return res.json(null);
+    }
+
+    const _summary = await OrderSummaryLocal.findOne({ select: ["id", "orderId", "codAmount", "orderObject"], where: { id: findOrder.id } });
+
+    const total = +_summary.codAmount;
+    const products = _summary.orderObject;
+    const order = { id: _summary.id, orderId: _summary.orderId };
+
+    return res.json({ products, total, order, printed: 0 });
+  },
+
   findProducts: async (req, res) => {
     const inputs = req.allParams();
 
@@ -130,6 +158,7 @@ module.exports = {
     let cnno = null;
     let status = null;
     let products = [];
+    let itemsInOrder = [];
     if (inputs.duplicate == "true") {
       const printed = await OrderSummaryLocal.find({
         status: ["dispatch_rider_logistics", "dispatch_reverse_pickup", "dispatch_call_courier", "dispatch_temp_id", "dispatch_trax"],
@@ -151,10 +180,12 @@ module.exports = {
       cnno = device.cnno;
       status = device.status;
       products = device.productFullId.split(",");
+      itemsInOrder = device.itemsInOrder.split(",");
     } else {
       cnno = sticker.pre_cnno;
       products = inputs.products;
       status = `dispatch_${sticker.courierName}`;
+      itemsInOrder = inputs.products.map((item) => item.split("_")[0]);
     }
 
     const { moment } = sails.config.globals;
@@ -165,20 +196,19 @@ module.exports = {
     const _update = {
       ...sticker,
 
-      tempId: null,
-      pre_cnno: null,
-
       cnno,
       status,
       printedBy: inputs.deviceId,
-      itemsInOrder: products.join(","),
       productFullId: products.join(","),
+      itemsInOrder: itemsInOrder.join(","),
       itemsCount: products.length.toString(),
 
       packedAt: datetime,
       printedAt: datetime,
       createdAt: datetime,
 
+      tempId: null,
+      pre_cnno: null,
       arrivedAt: null,
       dispatchAt: null,
       returnedAt: null,

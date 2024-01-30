@@ -8,6 +8,7 @@ jQuery(document).ready(function ($) {
     $("#master_input").focus();
   }, 1999);
 
+  let packingStart = false;
   const processingOrder = { products: {}, order: null, printed: null };
 
   $("#master_input").keypress(function (e) {
@@ -19,7 +20,163 @@ jQuery(document).ready(function ($) {
       const search = $t.val();
       const checkProduct = search.split("_");
 
-      if (checkProduct.length === 2 && checkProduct[0].length < 6 && processingOrder.order !== null) {
+      if (checkProduct[0] === "START") {
+        $t.blur();
+        $loader.show();
+        $productContainer.empty();
+        processingOrder.order = null;
+        processingOrder.products = {};
+        processingOrder.printed = null;
+        $amount.hide().find("b").text("");
+        $duplicate.hide().find("b").text("");
+
+        $.post("/orders/start-packing", { deviceId }, null, "json")
+          .then(async function (order) {
+            console.log("order start res:", order);
+
+            if (order.products) {
+              packingStart = true;
+              processingOrder.order = order.order;
+              processingOrder.printed = order.printed;
+
+              let totalItems = 0;
+              order.products.forEach(function (product) {
+                if (product.id < 1000000) {
+                  totalItems += product.qty;
+                  populateProduct(product);
+                }
+              });
+
+              setTimeout(function () {
+                $amount.slideDown().find("b").text(`PKR ${order.total} (Item: ${totalItems})`);
+
+                if (order.printed) {
+                  $duplicate.slideDown().find("b").text(order.printed);
+                }
+              });
+            } else {
+              packingStart = false;
+              toastr.info("Packing order not found, please fetch live orders.", "Order");
+            }
+          })
+          .catch(function (res) {
+            if (res && res.responseJSON) {
+              Object.keys(res.responseJSON).forEach(function (key) {
+                const error = res.responseJSON[key];
+                toastr.error(error.message, error.rule.toCapitalizeAllWords());
+              });
+            }
+          })
+          .always(function () {
+            $t.val("").focus();
+            $loader.hide();
+          });
+      } else if (checkProduct[0] === "SKIP") {
+        $loader.show();
+        const sticker = processingOrder.order.id;
+        $.post("/orders/orders/skip-sticker", { sticker, deviceId }, null, "json")
+          .then(async function (skipSticker) {
+            console.log("skip sticker res:", skipSticker);
+
+            $t.val("").focus();
+            $productContainer.empty();
+            processingOrder.order = null;
+            processingOrder.products = {};
+            processingOrder.printed = null;
+            $amount.hide().find("b").text("");
+            $duplicate.hide().find("b").text("");
+
+            toastr.warning("Order has been skipped successfully!", "Skipped");
+          })
+          .catch(function (res) {
+            if (res && res.responseJSON) {
+              Object.keys(res.responseJSON).forEach(function (key) {
+                const error = res.responseJSON[key];
+                toastr.error(error.message, error.rule.toCapitalizeAllWords());
+              });
+            }
+          })
+          .always(function () {
+            $loader.hide();
+          });
+      } else if (checkProduct[0] === "PRINT") {
+        let canPrint = true;
+        $("div[data-product]").each(function (i, e) {
+          const $e = $(e);
+          if ($e.data("product") && $e.data("quantity")) {
+            if (
+              !processingOrder.products[$e.data("product").toString()] ||
+              processingOrder.products[$e.data("product").toString()].length !== $e.data("quantity")
+            ) {
+              canPrint = false;
+            }
+          } else {
+            canPrint = false;
+          }
+        });
+
+        if (canPrint || processingOrder.printed) {
+          const products = [];
+          const sticker = processingOrder.order.id;
+          Object.values(processingOrder.products).forEach((item) => {
+            if (item.length) {
+              item.forEach((productFull) => {
+                products.push(productFull);
+              });
+            }
+          });
+
+          const duplicate = !!processingOrder.printed;
+
+          $loader.show();
+          $.post("/orders/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
+            .then(async function (confirmSticker) {
+              console.log("confirm sticker res:", confirmSticker);
+
+              window.open(`/orders/orders/print-sticker/${confirmSticker.id}`, "_blank");
+              const tabResponse = await new Promise((resolve) => window.addEventListener("print-sticker-complete", resolve));
+              console.log("sticker printed", tabResponse.detail);
+
+              $productContainer.empty();
+              processingOrder.order = null;
+              processingOrder.products = {};
+              processingOrder.printed = null;
+              $amount.hide().find("b").text("");
+              $duplicate.hide().find("b").text("");
+
+              toastr.success("Order has been processed successfully!", "Sticker");
+
+              if (packingStart) {
+                $t.val("START_next")
+                  .focus()
+                  .trigger($.Event("keypress", { which: 13 }));
+              } else {
+                $t.val("").focus();
+              }
+            })
+            .catch(function (res) {
+              if (res && res.responseJSON) {
+                Object.keys(res.responseJSON).forEach(function (key) {
+                  const error = res.responseJSON[key];
+                  toastr.error(error.message, error.rule.toCapitalizeAllWords());
+                });
+              }
+            })
+            .always(function () {
+              $loader.hide();
+            });
+        } else {
+          $("#order_products_list").addClass("shake-it");
+
+          setTimeout(function () {
+            $("#order_products_list").removeClass("shake-it");
+          }, 799);
+
+          toastr.error("Items quantity is not completed.", "Quantity");
+
+          $t.val("").focus();
+        }
+      } else if (checkProduct.length === 2 && checkProduct[0].length < 6 && processingOrder.order !== null) {
         const $qty = $(`div[data-product="${checkProduct[0]}"]`);
 
         const productId = checkProduct[0];
@@ -62,108 +219,10 @@ jQuery(document).ready(function ($) {
 
         $t.val("").focus();
         console.log(processingOrder);
-      } else if (search === "SKIP") {
-        $loader.show();
-        const sticker = processingOrder.order.id;
-        $.post("/orders/orders/skip-sticker", { sticker, deviceId }, null, "json")
-          .then(async function (skipSticker) {
-            console.log("skip sticker res:", skipSticker);
-
-            $t.val("").focus();
-            $productContainer.empty();
-            processingOrder.order = null;
-            processingOrder.products = {};
-            processingOrder.printed = null;
-            $amount.hide().find("b").text("");
-            $duplicate.hide().find("b").text("");
-
-            toastr.warning("Order has been skipped successfully!", "Skipped");
-          })
-          .catch(function (res) {
-            if (res && res.responseJSON) {
-              Object.keys(res.responseJSON).forEach(function (key) {
-                const error = res.responseJSON[key];
-                toastr.error(error.message, error.rule.toCapitalizeAllWords());
-              });
-            }
-          })
-          .always(function () {
-            $loader.hide();
-          });
-      } else if (search === "PRINT") {
-        let canPrint = true;
-        $("div[data-product]").each(function (i, e) {
-          const $e = $(e);
-          if ($e.data("product") && $e.data("quantity")) {
-            if (
-              !processingOrder.products[$e.data("product").toString()] ||
-              processingOrder.products[$e.data("product").toString()].length !== $e.data("quantity")
-            ) {
-              canPrint = false;
-            }
-          } else {
-            canPrint = false;
-          }
-        });
-
-        if (canPrint || processingOrder.printed) {
-          const products = [];
-          const sticker = processingOrder.order.id;
-          Object.values(processingOrder.products).forEach((item) => {
-            if (item.length) {
-              item.forEach((productFull) => {
-                products.push(productFull);
-              });
-            }
-          });
-
-          const duplicate = !!processingOrder.printed;
-
-          $loader.show();
-          $.post("/orders/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
-            .then(async function (confirmSticker) {
-              console.log("confirm sticker res:", confirmSticker);
-
-              window.open(`/orders/orders/print-sticker/${confirmSticker.id}`, "_blank");
-              const tabResponse = await new Promise((resolve) => window.addEventListener("print-sticker-complete", resolve));
-              console.log("sticker printed", tabResponse.detail);
-
-              $t.val("").focus();
-
-              $productContainer.empty();
-              processingOrder.order = null;
-              processingOrder.products = {};
-              processingOrder.printed = null;
-              $amount.hide().find("b").text("");
-              $duplicate.hide().find("b").text("");
-
-              toastr.success("Order has been processed successfully!", "Sticker");
-            })
-            .catch(function (res) {
-              if (res && res.responseJSON) {
-                Object.keys(res.responseJSON).forEach(function (key) {
-                  const error = res.responseJSON[key];
-                  toastr.error(error.message, error.rule.toCapitalizeAllWords());
-                });
-              }
-            })
-            .always(function () {
-              $loader.hide();
-            });
-        } else {
-          $("#order_products_list").addClass("shake-it");
-
-          setTimeout(function () {
-            $("#order_products_list").removeClass("shake-it");
-          }, 799);
-
-          toastr.error("Items quantity is not completed.", "Quantity");
-
-          $t.val("").focus();
-        }
       } else if (search) {
         $t.blur();
         $loader.show();
+        packingStart = false;
         $productContainer.empty();
         processingOrder.order = null;
         processingOrder.products = {};
