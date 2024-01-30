@@ -30,7 +30,7 @@ jQuery(document).ready(function ($) {
         $amount.hide().find("b").text("");
         $duplicate.hide().find("b").text("");
 
-        $.post("/orders/start-packing", { deviceId }, null, "json")
+        $.post("/orders/orders/start-packing", { deviceId }, null, "json")
           .then(async function (order) {
             console.log("order start res:", order);
 
