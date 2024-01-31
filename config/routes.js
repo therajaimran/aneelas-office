@@ -22,8 +22,8 @@ module.exports.routes = {
   "POST /orders/skip-sticker": { controller: "PageController", action: "skipSticker" },
   "POST /orders/confirm-sticker": { controller: "PageController", action: "confirmSticker" },
 
+  "POST /racks-local": { controller: "PageController", action: "localRack" },
+  "POST /order-local": { controller: "PageController", action: "localOrder" },
   "POST /upload-thumb": { controller: "PageController", action: "uploadThumbs" },
   "POST /order-summary-local": { controller: "PageController", action: "localSummary" },
-
-  "POST /order-local": { controller: "PageController", action: "localOrder" },
 };

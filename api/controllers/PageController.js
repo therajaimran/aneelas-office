@@ -414,6 +414,39 @@ module.exports = {
     }
   },
 
+  localRack: async (req, res) => {
+    const inputs = req.allParams();
+
+    const VS = Validator(inputs, {
+      rack_items: "required|array",
+      "rack_items.*": "required|object",
+    });
+
+    const matched = await VS.check();
+
+    if (!matched) {
+      return res.status(400).json(VS.errors);
+    }
+
+    try {
+      for await (const rackItem of inputs.rack_items) {
+        if (rackItem.id) {
+          const id = +rackItem.id;
+          delete rackItem.id;
+
+          await RackItem.updateOne({ id }).set({ ...rackItem });
+        } else {
+          await RackItem.create({ ...rackItem });
+        }
+      }
+
+      return res.json({ message: "Rack saved successfully." });
+    } catch (e) {
+      console.log(e);
+      return res.status(400).json({ message: "Execution error." });
+    }
+  },
+
   uploadThumbs: async (req, res) => {
     const thumb = req.file("thumb");
 
