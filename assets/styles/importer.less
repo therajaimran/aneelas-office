@@ -9,6 +9,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 99;
   width: 100px;
   height: 100px;
   background-color: fade(@dark, 80%);
@@ -22,6 +23,20 @@
   align-items: center;
   line-height: 1rem;
   cursor: pointer;
+}
+
+.pie-chart-quantity {
+  position: absolute;
+  z-index: 999;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  top: 0;
+}
+
+.pie-chart-quantity-value {
+  position: absolute;
+  z-index: 9999;
 }
 
 .shake-it {

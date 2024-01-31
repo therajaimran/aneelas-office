@@ -30,7 +30,7 @@ jQuery(document).ready(function ($) {
         $amount.hide().find("b").text("");
         $duplicate.hide().find("b").text("");
 
-        $.post("/orders/orders/start-packing", { deviceId }, null, "json")
+        $.post("/orders/start-packing", { deviceId }, null, "json")
           .then(async function (order) {
             console.log("order start res:", order);
 
@@ -48,7 +48,7 @@ jQuery(document).ready(function ($) {
               });
 
               setTimeout(function () {
-                $amount.slideDown().find("b").text(`PKR ${order.total} (Item: ${totalItems})`);
+                $amount.slideDown().find("b").text(`PKR ${order.total} (Item: ${totalItems}) Order: ${order.order.orderId}`);
 
                 if (order.printed) {
                   $duplicate.slideDown().find("b").text(order.printed);
@@ -74,7 +74,7 @@ jQuery(document).ready(function ($) {
       } else if (checkProduct[0] === "SKIP") {
         $loader.show();
         const sticker = processingOrder.order.id;
-        $.post("/orders/orders/skip-sticker", { sticker, deviceId }, null, "json")
+        $.post("/orders/skip-sticker", { sticker, deviceId }, null, "json")
           .then(async function (skipSticker) {
             console.log("skip sticker res:", skipSticker);
 
@@ -136,7 +136,7 @@ jQuery(document).ready(function ($) {
           const duplicate = !!processingOrder.printed;
 
           $loader.show();
-          $.post("/orders/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
+          $.post("/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
             .then(async function (confirmSticker) {
               console.log("confirm sticker res:", confirmSticker);
 
@@ -166,8 +166,24 @@ jQuery(document).ready(function ($) {
                 Object.keys(res.responseJSON).forEach(function (key) {
                   const error = res.responseJSON[key];
                   toastr.error(error.message, error.rule.toCapitalizeAllWords());
+
+                  if (error.assigned && error.assigned.length) {
+                    error.assigned.forEach((itemId) => {
+                      delete processingOrder.products[+itemId];
+                      $(`div[data-product="${itemId}"]`).css({ backgroundColor: "rgba(220, 53, 69, 0.99)" });
+                    });
+                    console.log("processingOrder:", processingOrder);
+                  }
                 });
               }
+
+              $("#order_products_list").addClass("shake-it");
+
+              setTimeout(function () {
+                $("#order_products_list").removeClass("shake-it");
+              }, 799);
+
+              $t.val("").focus();
             })
             .always(function () {
               $loader.hide();
@@ -237,27 +253,10 @@ jQuery(document).ready(function ($) {
         $amount.hide().find("b").text("");
         $duplicate.hide().find("b").text("");
 
-        $.post("/orders/orders/find-products", { search }, null, "json")
+        $.post("/orders/find-products", { search }, null, "json")
           .then(function (res) {
             if (res.products) {
-              processingOrder.printed = res.printed;
-              processingOrder.order = res.order;
-
-              let totalItems = 0;
-              res.products.forEach(function (product) {
-                if (product.id < 1000000) {
-                  totalItems += product.qty;
-                  populateProduct(product);
-                }
-              });
-
-              setTimeout(function () {
-                $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems})`);
-
-                if (res.printed) {
-                  $duplicate.slideDown().find("b").text(res.printed);
-                }
-              });
+              populateItemsPie(res);
             } else {
               toastr.error("Sticker do not have sufficient values.", "Invalid");
             }
@@ -278,6 +277,27 @@ jQuery(document).ready(function ($) {
       }
     }
   });
+
+  const populateItemsPie = function (res) {
+    processingOrder.printed = res.printed;
+    processingOrder.order = res.order;
+
+    let totalItems = 0;
+    res.products.forEach(function (product) {
+      if (product.id < 1000000) {
+        totalItems += product.qty;
+        populateProduct(product);
+      }
+    });
+
+    setTimeout(function () {
+      $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems}) Order: ${res.order.orderId}`);
+
+      if (res.printed) {
+        $duplicate.slideDown().find("b").text(res.printed);
+      }
+    });
+  };
 
   const populateProduct = function (product) {
     const thumbSplit = product.thumbnail_.split("/");
@@ -311,6 +331,20 @@ jQuery(document).ready(function ($) {
         </div>
       </div>
     `);
+
+    setTimeout(function () {
+      // $(`#pie-chart-quantity-${product.id}`).attr("data-val", 40).progressPie({
+      //   mode: $.fn.progressPie.Mode.RED,
+      //   valueData: "val",
+      //   strokeWidth: 0,
+      //   size: 100,
+      // });
+      //$.fn.progressPie.Mode.GREEN
+      //<div class="product-quantity">
+      //               <div id="pie-chart-quantity-${product.id}" class="pie-chart-quantity" data-val="0"></div>
+      //               <span class="pie-chart-quantity-value">${product.qty}</span>
+      //             </div>
+    }, 99);
   };
 
   let device_id = localStorage.getItem("device_id");

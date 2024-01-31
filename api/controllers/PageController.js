@@ -189,6 +189,29 @@ module.exports = {
       products = inputs.products;
       status = `dispatch_${sticker.courierName}`;
       itemsInOrder = inputs.products.map((item) => item.split("_")[0]);
+
+      const alreadyAssigned = [];
+      for await (const product of inputs.products) {
+        const checkAlready = await OrderSummaryLocal.count({
+          productFullId: { contains: product },
+        });
+
+        if (checkAlready) {
+          alreadyAssigned.push(product);
+        }
+      }
+
+      if (alreadyAssigned.length) {
+        const ids = alreadyAssigned.map((item) => item.split("_")[0]).unique();
+
+        return res.status(400).json({
+          order: {
+            message: `${ids.join(",")} These products are already assigned, please scan other products!`,
+            rule: "Items Exist",
+            assigned: ids,
+          },
+        });
+      }
     }
 
     const { moment } = sails.config.globals;
@@ -240,7 +263,9 @@ module.exports = {
     const tempId = Buffer.from(fetchSummary.id.toString()).toString("base64");
     fetchSummary = await OrderSummaryLocal.updateOne({ id: fetchSummary.id }).set({ tempId });
 
-    await OrderSummaryLocal.updateOne({ id: sticker.id }).set({ pre_cnno: null, pre_cnno_price: null, status });
+    if (inputs.duplicate == "false") {
+      await OrderSummaryLocal.updateOne({ id: sticker.id }).set({ pre_cnno_price: null, status });
+    }
 
     return res.json(fetchSummary);
   },
