@@ -41,7 +41,16 @@ module.exports = {
     const products = _summary.orderObject;
     const order = { id: _summary.id, orderId: _summary.orderId };
 
-    return res.json({ products, total, order, printed: 0 });
+    const productRacks = {};
+    const item_id = products.map((item) => item.id).filter((item) => item < 1000000);
+    if (item_id.length) {
+      const rackInfo = await RackItem.find({ item_id });
+      for await (const rack of rackInfo) {
+        productRacks[rack.item_id] = { ...rack };
+      }
+    }
+
+    return res.json({ products, total, order, productRacks, printed: 0 });
   },
 
   findProducts: async (req, res) => {
@@ -99,13 +108,22 @@ module.exports = {
     const products = _order_summary.orderObject;
     const order = { id: _order_summary.id, orderId: _order_summary.orderId };
 
+    const productRacks = {};
+    const item_id = products.map((item) => item.id).filter((item) => item < 1000000);
+    if (item_id.length) {
+      const rackInfo = await RackItem.find({ item_id });
+      for await (const rack of rackInfo) {
+        productRacks[rack.item_id] = { ...rack };
+      }
+    }
+
     const printed = await OrderSummaryLocal.count({
       status: ["dispatch_rider_logistics", "dispatch_reverse_pickup", "dispatch_call_courier", "dispatch_temp_id", "dispatch_trax"],
       orderId: _order_summary.orderId,
       pre_cnno: null,
     });
 
-    return res.json({ products, total, order, printed });
+    return res.json({ products, total, order, printed, productRacks });
   },
 
   skipSticker: async (req, res) => {

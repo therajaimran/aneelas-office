@@ -1,4 +1,5 @@
 jQuery(document).ready(function ($) {
+  const priceCheck = 1000;
   const $amount = $("#order_amount").hide();
   const $duplicate = $("#order_duplicate").hide();
   const $loader = $(".page-loader-container").hide();
@@ -28,9 +29,10 @@ jQuery(document).ready(function ($) {
         processingOrder.products = {};
         processingOrder.printed = null;
         $amount.hide().find("b").text("");
+        $("body").removeClass("bg-danger");
         $duplicate.hide().find("b").text("");
 
-        $.post("/orders/orders/start-packing", { deviceId }, null, "json")
+        $.post("/orders/start-packing", { deviceId }, null, "json")
           .then(async function (order) {
             console.log("order start res:", order);
 
@@ -54,10 +56,10 @@ jQuery(document).ready(function ($) {
             $t.val("").focus();
             $loader.hide();
           });
-      } else if (checkProduct[0] === "SKIP") {
+      } else if (checkProduct[0] === "SKIP" || checkProduct[0] === "REVIEW") {
         $loader.show();
         const sticker = processingOrder.order.id;
-        $.post("/orders/orders/skip-sticker", { sticker, deviceId }, null, "json")
+        $.post("/orders/skip-sticker", { sticker, deviceId }, null, "json")
           .then(async function (skipSticker) {
             console.log("skip sticker res:", skipSticker);
 
@@ -66,6 +68,7 @@ jQuery(document).ready(function ($) {
             processingOrder.products = {};
             processingOrder.printed = null;
             $amount.hide().find("b").text("");
+            $("body").removeClass("bg-danger");
             $duplicate.hide().find("b").text("");
 
             toastr.warning("Order has been skipped successfully!", "Skipped");
@@ -119,7 +122,7 @@ jQuery(document).ready(function ($) {
           const duplicate = !!processingOrder.printed;
 
           $loader.show();
-          $.post("/orders/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
+          $.post("/orders/confirm-sticker", { sticker, products, deviceId, duplicate }, null, "json")
             .then(async function (confirmSticker) {
               console.log("confirm sticker res:", confirmSticker);
 
@@ -132,6 +135,7 @@ jQuery(document).ready(function ($) {
               processingOrder.products = {};
               processingOrder.printed = null;
               $amount.hide().find("b").text("");
+              $("body").removeClass("bg-danger");
               $duplicate.hide().find("b").text("");
 
               toastr.success("Order has been processed successfully!", "Sticker");
@@ -187,12 +191,17 @@ jQuery(document).ready(function ($) {
         const productId = checkProduct[0];
 
         if ($qty.length) {
+          const price = $qty.data("price");
           const qty = $qty.data("quantity");
 
-          if (!processingOrder.products[productId] || processingOrder.products[productId].length !== qty) {
+          if (processingOrder.products[productId] && processingOrder.products[productId].length === qty) {
+            toastr.info("Item quantity exceeded.", "Quantity");
+          } else if (!processingOrder.products[productId] || processingOrder.products[productId].length !== qty) {
             if (processingOrder.products[productId] && processingOrder.products[productId].length) {
-              if (processingOrder.products[productId].includes(search)) {
+              if (processingOrder.products[productId].includes(search) && price > priceCheck) {
                 toastr.warning("Product is already assigned, please scan another product.", "Invalid Product");
+              } else if (processingOrder.products[productId].includes(search) && price < priceCheck) {
+                processingOrder.products[productId].push(`${checkProduct[0]}_${randomString(4)}`);
               } else {
                 processingOrder.products[productId].push(search);
               }
@@ -200,13 +209,19 @@ jQuery(document).ready(function ($) {
               processingOrder.products[productId] = [search];
             }
           } else if (
+            price > priceCheck &&
             processingOrder.products[productId] &&
             processingOrder.products[productId].length &&
             processingOrder.products[productId].includes(search)
           ) {
             toastr.warning("Product is already assigned, please scan another product.", "Invalid Product");
-          } else if (processingOrder.products[productId] && processingOrder.products[productId].length === qty) {
-            toastr.info("Item quantity exceeded.", "Quantity");
+          } else if (
+            price < priceCheck &&
+            processingOrder.products[productId] &&
+            processingOrder.products[productId].length &&
+            processingOrder.products[productId].includes(search)
+          ) {
+            processingOrder.products[productId].push(`${checkProduct[0]}_${randomString(4)}`);
           }
 
           const percent = Math.ceil(processingOrder.products[productId].length * (100 / qty));
@@ -233,9 +248,10 @@ jQuery(document).ready(function ($) {
         processingOrder.products = {};
         processingOrder.printed = null;
         $amount.hide().find("b").text("");
+        $("body").removeClass("bg-danger");
         $duplicate.hide().find("b").text("");
 
-        $.post("/orders/orders/find-products", { search }, null, "json")
+        $.post("/orders/find-products", { search }, null, "json")
           .then(function (res) {
             if (res.products) {
               populateItemsPie(res);
@@ -268,7 +284,7 @@ jQuery(document).ready(function ($) {
     res.products.forEach(function (product) {
       if (product.id < 1000000) {
         totalItems += +product.qty;
-        populateProduct(product);
+        populateProduct(product, res.productRacks[product.id]);
       }
     });
 
@@ -276,12 +292,13 @@ jQuery(document).ready(function ($) {
       $amount.slideDown().find("b").text(`PKR ${res.total} (Item: ${totalItems}) Order: ${res.order.orderId}`);
 
       if (res.printed) {
+        $("body").addClass("bg-danger");
         $duplicate.slideDown().find("b").text(res.printed);
       }
     });
   };
 
-  const populateProduct = function (product) {
+  const populateProduct = function (product, rack) {
     const thumbSplit = product.thumbnail_.split("/");
     const image = thumbSplit[thumbSplit.length - 1];
     $productContainer.append(`
@@ -291,7 +308,14 @@ jQuery(document).ready(function ($) {
           <div class="card-img-overlay p-0">
             <h6 class="card-title p-1 bg-dark bg-opacity-75">${product.id} | ${product.name}</h6>
 
-            <div class="product-quantity pie-chart-container-${product.id}" data-product="${product.id}" data-quantity="${product.qty}">
+            ${rack ? '<span class="bg-primary p-1 rounded ms-2">Rack: <b>' + rack.rack_name + "</b></span>" : ""}
+
+            <div
+              data-product="${product.id}"
+              data-quantity="${product.qty}"
+              data-price="${product.itemPrice}"
+              class="product-quantity pie-chart-container-${product.id}"
+            >
               <div id="pie-chart-quantity-${product.id}" class="pie-chart-quantity" data-val="0"></div>
               <span class="pie-chart-quantity-value">${product.qty}</span>
             </div>
@@ -309,23 +333,11 @@ jQuery(document).ready(function ($) {
 
     setTimeout(function () {
       $(`#pie-chart-quantity-${product.id}`).progressPie({
-        mode: $.fn.progressPie.Mode.RED,
+        mode: $.fn.progressPie.Mode.GREEN,
         valueData: "val",
         strokeWidth: 0,
         size: 100,
       });
-
-      //<div
-      //   data-placement="top"
-      //   data-toggle="tooltip"
-      //   title="Product Quantity"
-      //   data-product="${product.id}"
-      //   data-quantity="${product.qty}"
-      //   data-video="${product.video_}"
-      //   class="product-quantity play-video"
-      // >
-      //   ${product.qty}
-      // </div>
     }, 99);
   };
 
@@ -367,6 +379,15 @@ jQuery.debounce = function (func, timeout = 300) {
       func.apply(this, args);
     }, timeout);
   };
+};
+
+const randomString = function (length) {
+  let result = "";
+  const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for (let i = length; i > 0; --i) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
 };
 
 String.prototype.toCapitalizeCase = function () {
